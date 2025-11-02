@@ -374,7 +374,7 @@ const Chat: React.FC = () => {
               <Bot className="w-10 h-10 text-white" />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              Welcome to Study Buddy!
+              Welcome to Goal Mate!
             </h3>
             <p className="text-gray-600 dark:text-gray-300 max-w-md">
               I'm here to help you learn. Ask me anything about your subjects, 

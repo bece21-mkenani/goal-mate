@@ -21,7 +21,7 @@ export class AIService {
         }
       });
       
-      const prompt = `You are Study Buddy, a helpful AI tutor for students. Respond to the user's message in an engaging, encouraging way. Keep responses concise (3-4sentences) and educational. User message: "${message}"`;
+      const prompt = `You are Goal Mate, a helpful AI tutor for students. Respond to the user's message in an engaging, encouraging way. Keep responses concise (3-4sentences) and educational. User message: "${message}"`;
       
       const result = await model.generateContent(prompt);
       const response = result.response.text();

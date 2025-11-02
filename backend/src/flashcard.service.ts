@@ -58,7 +58,7 @@ export class FlashcardService {
       });
 
       const prompt = `
-        You are Study Buddy, an AI tutor creating educational flashcards.
+        You are Goal Mate, an AI tutor creating educational flashcards.
         
         Create ${count} high-quality flashcards about "${subject}".
         

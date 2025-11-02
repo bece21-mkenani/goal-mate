@@ -112,7 +112,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
       case 'points':
         return Math.min((userStats.total_points / achievement.condition_value) * 100, 100);
       case 'sessions':
-        // This would need session count from database
         return 0;
       case 'subjects':
         return Math.min((userStats.subjects_studied.length / achievement.condition_value) * 100, 100);

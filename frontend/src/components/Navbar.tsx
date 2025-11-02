@@ -10,15 +10,15 @@ import {
   Moon, 
   Sun,
   X,
-  Menu
+  Menu,
+  Timer
 } from 'lucide-react';
 
-// Import Cards icon correctly - it's called CreditCard in lucide-react
 import { CreditCard as Cards } from 'lucide-react';
 
 interface NavbarProps {
-  currentPage: 'chat' | 'study-plan' | 'flashcard' | 'profile';
-  onPageChange: (page: 'chat' | 'study-plan' | 'flashcard' | 'profile') => void;
+  currentPage: 'chat' | 'study-plan' | 'flashcard' | 'profile'|'timer';
+  onPageChange: (page: 'chat' | 'study-plan' | 'flashcard' | 'profile'|'timer') => void;
   onLogout: () => void;
   onToggleTheme: () => void;
   theme: string;
@@ -36,9 +36,10 @@ const Navbar: React.FC<NavbarProps> = ({
   onMobileMenuToggle
 }) => {
   const navItems = [
-    { id: 'chat' as const, label: 'Study Buddy', icon: MessageSquare },
+    { id: 'chat' as const, label: 'Goal Mate', icon: MessageSquare },
     { id: 'study-plan' as const, label: 'Study Plans', icon: Calendar },
     { id: 'flashcard' as const, label: 'Flashcards', icon: Cards },
+    { id: 'timer' as const, label: 'Timer', icon: Timer },
     { id: 'profile' as const, label: 'Profile', icon: User },
   ];
 
@@ -99,7 +100,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 <BookOpen className="w-6 h-6 text-white" />
               </div>
               <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                StudyBuddy
+                Goal Mate
               </span>
             </motion.div>
 
@@ -217,10 +218,10 @@ const Navbar: React.FC<NavbarProps> = ({
                     </div>
                     <div>
                       <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                        StudyBuddy
+                        Goal Mate
                       </h2>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Your Learning Companion
+                        Your Learning Manager
                       </p>
                     </div>
                   </div>

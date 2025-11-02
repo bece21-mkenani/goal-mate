@@ -1,12 +1,13 @@
-import React, { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import React, { createContext, useEffect, useState } from 'react';
 import AuthForm from './components/AuthForm';
 import Chat from './components/Chat';
-import StudyPlan from './components/StudyPlan';
 import Flashcard from './components/Flashcard';
-import UserProfile from './components/UserProfile';
 import Navbar from './components/Navbar';
+import StudyPlan from './components/StudyPlan';
+import StudySessionTimer from './components/StudySessionTimer';
+import UserProfile from './components/UserProfile';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3036';
 
@@ -20,7 +21,7 @@ export const ThemeContext = createContext<ThemeContextType>({
   toggleTheme: () => {},
 });
 
-type Page = 'chat' | 'study-plan' | 'flashcard' | 'profile';
+type Page = 'chat' | 'study-plan' | 'flashcard' | 'profile'| 'timer';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -167,6 +168,17 @@ const App: React.FC = () => {
                       <Flashcard />
                     </motion.div>
                   )}
+                  {currentPage === 'timer' && (
+                    <motion.div
+                    key="timer"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                    >
+                    <StudySessionTimer />
+                    </motion.div>
+                    )}
                   
                   {currentPage === 'profile' && (
                     <motion.div
