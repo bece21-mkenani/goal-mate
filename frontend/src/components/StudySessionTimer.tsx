@@ -23,8 +23,8 @@ const StudySessionTimer: React.FC = () => {
   const [selectedSubject, setSelectedSubject] = useState('');
   
   // --- MODIFICATION: States for dynamic subjects ---
-  const [subjects, setSubjects] = useState<string[]>([]); // Default to empty array
-  const [isLoadingSubjects, setIsLoadingSubjects] = useState(true); // Loading state for dropdown
+  const [subjects, setSubjects] = useState<string[]>([]); 
+  const [isLoadingSubjects, setIsLoadingSubjects] = useState(true); 
   
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -63,7 +63,7 @@ const StudySessionTimer: React.FC = () => {
     };
 
     fetchUserSubjects();
-  }, []); // Empty dependency array means this runs once on mount
+  }, []); 
 
   // ... (Timer logic - no changes)
   useEffect(() => {

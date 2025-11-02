@@ -94,7 +94,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
         transition={{ delay: 0.2, duration: 0.5 }}
         className="text-xl sm:text-2xl font-bold mb-6 text-gray-900 dark:text-white text-center"
       >
-        Study Buddy
+        Goal Mate
       </motion.h2>
       <div className="space-y-4">
         <div>
