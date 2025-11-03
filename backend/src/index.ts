@@ -186,7 +186,50 @@ app.post('/flashcard/generate', async (req: Request, res: Response) => {
     res.status(400).json({ error: err.message });
   }
 });
+// GET: Fetch all flashcards due for review
+app.get('/flashcards/review', async (req: Request, res: Response) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) throw new Error('No token provided');
+    const user = await AuthService.getUser(token);
+    if (!user) throw new Error('User not found');
 
+    const reviewDeck = await FlashcardService.getReviewDeck(user.id, token);
+    console.log(`Fetched review deck for user ${user.id}, count: ${reviewDeck.length}`);
+    res.json({ reviewDeck });
+  } catch (err: any) {
+    console.error('Get Review Deck Error:', err.message);
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// POST: Update a flashcard's review status
+app.post('/flashcards/review/:cardId', async (req: Request, res: Response) => {
+  try {
+    const { cardId } = req.params;
+    const { performance } = req.body; 
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (!token) throw new Error('No token provided');
+    if (!performance) throw new Error('Performance rating is required');
+    
+    const user = await AuthService.getUser(token);
+    if (!user) throw new Error('User not found');
+
+    const updatedCard = await FlashcardService.updateFlashcardReview(
+      cardId,
+      user.id,
+      performance,
+      token
+    );
+    
+    console.log(`Updated review for card ${cardId}, user ${user.id}`);
+    res.json({ updatedCard });
+  } catch (err: any) {
+    console.error('Update Review Error:', err.message);
+    res.status(400).json({ error: err.message });
+  }
+});
 /* ====================== USER ROUTES ====================== */
 
 app.get('/user/statistics/:userId', async (req: Request, res: Response) => {

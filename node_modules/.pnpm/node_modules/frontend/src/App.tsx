@@ -1,13 +1,14 @@
+import React, { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
-import { AnimatePresence, motion } from 'framer-motion';
-import React, { createContext, useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import AuthForm from './components/AuthForm';
 import Chat from './components/Chat';
-import Flashcard from './components/Flashcard';
-import Navbar from './components/Navbar';
 import StudyPlan from './components/StudyPlan';
-import StudySessionTimer from './components/StudySessionTimer';
+import Flashcard from './components/Flashcard';
 import UserProfile from './components/UserProfile';
+import Navbar from './components/Navbar';
+import StudySessionTimer from './components/StudySessionTimer';
+import ReviewSession from './components/ReviewSession';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3036';
 
@@ -21,7 +22,7 @@ export const ThemeContext = createContext<ThemeContextType>({
   toggleTheme: () => {},
 });
 
-type Page = 'chat' | 'study-plan' | 'flashcard' | 'profile'| 'timer';
+type Page = 'chat' | 'study-plan' | 'flashcard' | 'profile' | 'timer';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -29,16 +30,17 @@ const App: React.FC = () => {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
   const [currentPage, setCurrentPage] = useState<Page>('chat');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isReviewing, setIsReviewing] = useState(false);
+
+  const toggleTheme = () => {
+    setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark');
+  };
 
   useEffect(() => {
     document.documentElement.classList.remove('light', 'dark');
     document.documentElement.classList.add(theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
-  };
 
   useEffect(() => {
     const validateToken = async () => {
@@ -53,7 +55,6 @@ const App: React.FC = () => {
         const res = await axios.get(`${apiUrl}/auth/user`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        console.log('Validate Token Response:', res.data);
         setIsAuthenticated(!!res.data.user);
       } catch (err: any) {
         console.error('Validate Token Error:', err.response?.data || err.message);
@@ -72,10 +73,9 @@ const App: React.FC = () => {
       return;
     }
     try {
-      const res = await axios.get(`${apiUrl}/auth/user`, {
+      const res = await await axios.get(`${apiUrl}/auth/user`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log('Auth Success Validate Response:', res.data);
       setIsAuthenticated(!!res.data.user);
     } catch (err: any) {
       console.error('Auth Success Validate Error:', err.response?.data || err.message);
@@ -96,15 +96,18 @@ const App: React.FC = () => {
     setIsAuthenticated(false);
     setCurrentPage('chat');
     setIsMobileMenuOpen(false);
+    setIsReviewing(false);
   };
 
   const handlePageChange = (page: Page) => {
     setCurrentPage(page);
     setIsMobileMenuOpen(false);
+    setIsReviewing(false);
   };
 
   const handleBackToDashboard = () => {
     setCurrentPage('chat');
+    setIsReviewing(false);
   };
 
   if (isLoading) {
@@ -130,7 +133,7 @@ const App: React.FC = () => {
               onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             />
             
-            <main className="pt-16"> {/* Add padding for fixed navbar */}
+            <main className="pt-16">
               <div className="p-4 sm:p-6 md:p-8">
                 <AnimatePresence mode="wait">
                   {currentPage === 'chat' && (
@@ -158,27 +161,44 @@ const App: React.FC = () => {
                   )}
                   
                   {currentPage === 'flashcard' && (
+                    <div key="flashcard-page">
+                      <AnimatePresence mode="wait">
+                        {!isReviewing ? (
+                          <motion.div
+                            key="flashcard-main"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            <Flashcard onStartReview={() => setIsReviewing(true)} />
+                          </motion.div>
+                        ) : (
+                          <motion.div
+                            key="flashcard-review"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            <ReviewSession onSessionComplete={() => setIsReviewing(false)} />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
+                  
+                  {currentPage === 'timer' && (
                     <motion.div
-                      key="flashcard"
+                      key="timer"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <Flashcard />
+                      <StudySessionTimer />
                     </motion.div>
                   )}
-                  {currentPage === 'timer' && (
-                    <motion.div
-                    key="timer"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3 }}
-                    >
-                    <StudySessionTimer />
-                    </motion.div>
-                    )}
                   
                   {currentPage === 'profile' && (
                     <motion.div

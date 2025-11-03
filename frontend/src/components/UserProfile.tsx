@@ -186,7 +186,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
               {userInfo?.name || 'User'}
             </h3>
-            <p className="text-gray-600 dark:text-gray-300">{userInfo?.email}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Member since {userInfo?.created_at ? new Date(userInfo.created_at).toLocaleDateString() : 'recently'}
             </p>

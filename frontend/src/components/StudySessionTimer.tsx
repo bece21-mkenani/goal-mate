@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { Play, Pause, RotateCcw, Timer, BookOpen, Award, Loader2, CheckCircle } from 'lucide-react';
-import React, { useState, useEffect, useContext } from 'react';
+import { Award, BookOpen, CheckCircle, Loader2, Pause, Play, RotateCcw, Timer } from 'lucide-react';
+import React, { useContext, useEffect, useState } from 'react';
 import { ThemeContext } from '../App'; // Import theme context
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3036';
@@ -78,9 +78,6 @@ const StudySessionTimer: React.FC = () => {
     return () => clearInterval(interval);
   }, [isActive, isPaused]);
 
-  // ... (All handlers: handleStart, handlePauseResume, handleReset, handleFinishSession - no changes)
-  // ... (All helpers: formatTime - no changes)
-  
   const handleStart = () => {
     if (!selectedSubject) {
       setError('Please select a subject before starting.');
@@ -201,7 +198,7 @@ const StudySessionTimer: React.FC = () => {
       {/* Timer Display */}
       <div className="text-center mb-8">
         <motion.p 
-          className=" text:6xl sm:text-7xl font-mono font-bold text-gray-800 dark:text-white"
+          className=" text:6xl sm:text-4xl font-mono font-bold text-gray-800 dark:text-white"
           key={time}
           initial={{ opacity: 0.8, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -210,18 +207,17 @@ const StudySessionTimer: React.FC = () => {
           {formatTime(time)}
         </motion.p>
       </div>
-
-      {/* Controls */}
-      <div className="flex justify-center items-center space-x-4">
+            {/* Controls */}
+      <div className="flex justify-center items-center space-x-2 sm:space-x-4">
         {!isActive ? (
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleStart}
             disabled={!selectedSubject || isLoadingSubjects}
-            className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full text-lg font-semibold shadow-lg disabled:opacity-50"
+            className="flex items-center space-x-1 sm:space-x-2 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full text-sm sm:text-lg font-semibold shadow-lg disabled:opacity-50 min-w-[80px] sm:min-w-[100px]"
           >
-            <Play />
+            <Play className="w-4 h-4 sm:w-5 sm:h-5" />
             <span>Start</span>
           </motion.button>
         ) : (
@@ -230,28 +226,31 @@ const StudySessionTimer: React.FC = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handlePauseResume}
-              className={`flex items-center space-x-2 px-6 py-3 rounded-full font-semibold shadow-md ${
+              className={`flex items-center space-x-1 sm:space-x-2 px-4 sm:px-6 py-2 sm:py-3 rounded-full font-semibold shadow-md min-w-[80px] sm:min-w-[100px] ${
                 isPaused 
                 ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white' 
                 : 'bg-yellow-500 text-white'
               }`}
             >
-              {isPaused ? <Play /> : <Pause />}
-              <span>{isPaused ? 'Resume' : 'Pause'}</span>
+              {isPaused ? (
+                <Play className="w-4 h-4 sm:w-5 sm:h-5" />
+              ) : (
+                <Pause className="w-4 h-4 sm:w-5 sm:h-5" />
+              )}
+              <span className="text-sm sm:text-lg">{isPaused ? 'Resume' : 'Pause'}</span>
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleReset}
-              className="flex items-center space-x-2 px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full font-semibold shadow-md"
+              className="flex items-center space-x-1 sm:space-x-2 px-4 sm:px-6 py-2 sm:py-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full font-semibold shadow-md min-w-[80px] sm:min-w-[100px]"
             >
-              <RotateCcw />
-              <span>Reset</span>
+              <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="text-sm sm:text-lg">Reset</span>
             </motion.button>
           </>
         )}
       </div>
-
       {/* Finish Session Button */}
       {isActive && (
         <div className="mt-8 text-center">
@@ -267,7 +266,7 @@ const StudySessionTimer: React.FC = () => {
             ) : (
               <Award />
             )}
-            <span>{isSaving ? 'Saving...' : 'Finish & Save Session'}</span>
+            <span className="text-sm sm:text-lg">{isSaving ? 'Saving...' : 'Finish & Save'}</span>
           </motion.button>
         </div>
       )}

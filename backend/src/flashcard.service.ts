@@ -8,6 +8,9 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!);
 
+// --- Spaced Repetition (SM-2) Constants ---
+const MIN_EASE_FACTOR = 1.3;
+
 export class FlashcardService {
   static async generateFlashcards(userId: string, subject: string, count: number, accessToken: string): Promise<any[]> {
     try {
@@ -103,12 +106,16 @@ export class FlashcardService {
         return this.generateMockFlashcards(userId, subject, count);
       }
       return flashcardsData.map((card: any, index: number) => ({
-        id: uuidv4(),
-        user_id: userId,
-        subject: subject,
-        front: card.front || `Question ${index + 1} about ${subject}`,
-        back: card.back || `Answer ${index + 1} explaining ${subject} concept`,
-        created_at: new Date().toISOString(),
+      id: uuidv4(),
+      user_id: userId,
+      subject: subject,
+      front: card.front || `Question ${index + 1} about ${subject}`,
+      back: card.back || `Answer ${index + 1} explaining ${subject} concept`,
+      created_at: new Date().toISOString(),
+      due_date: new Date().toISOString(),
+      interval: 1.0,
+      ease_factor: 2.5,
+      review_count:0
       }));
 
     } catch (error: any) {
@@ -116,7 +123,114 @@ export class FlashcardService {
       return this.generateMockFlashcards(userId, subject, count);
     }
   }
+  // -- Get cards due for review ---
+  static async getReviewDeck(userId: string, accessToken: string): Promise<any[]> {
+    try {
+      const supabase = createClient(supabaseUrl, supabaseKey, {
+        global: { headers: { Authorization: `Bearer ${accessToken}` } },
+      });
 
+      const today = new Date().toISOString();
+
+      const { data, error } = await supabase
+        .from('flashcards')
+        .select('*')
+        .eq('user_id', userId)
+        .lte('due_date', today) 
+        .order('due_date', { ascending: true }); 
+
+      if (error) {
+        throw new Error(`Failed to fetch review deck: ${error.message}`);
+      }
+      
+      return data || [];
+    } catch (err: any) {
+      console.error('Get Review Deck Error:', err.message);
+      throw new Error(`Failed to fetch review deck: ${err.message}`);
+    }
+  }
+
+  // ---Updating  a card after review ---
+  static async updateFlashcardReview(
+    cardId: string,
+    userId: string,
+    performance: 'forgot' | 'good' | 'easy',
+    accessToken: string
+  ): Promise<any> {
+    
+    try {
+      const supabase = createClient(supabaseUrl, supabaseKey, {
+        global: { headers: { Authorization: `Bearer ${accessToken}` } },
+      });
+
+      // 1. Get the card's current state
+      const { data: card, error: fetchError } = await supabase
+        .from('flashcards')
+        .select('interval, ease_factor, review_count')
+        .eq('id', cardId)
+        .eq('user_id', userId) 
+        .single();
+
+      if (fetchError || !card) {
+        throw new Error('Card not found or user mismatch');
+      }
+
+      let { interval, ease_factor, review_count } = card;
+
+      // 2. Calculating new SR values based on performance
+      if (performance === 'forgot') {
+        review_count = 0; 
+        interval = 1; 
+      } else {
+        review_count += 1;
+
+        if (performance === 'good') {
+    
+        } else if (performance === 'easy') {
+          ease_factor += 0.15; 
+        }
+        if (review_count === 1) {
+          interval = 1;
+        } else if (review_count === 2) {
+          interval = 6;
+        } else {
+          interval = Math.ceil(interval * ease_factor);
+        }
+      }
+
+      // 3. Ensuring ease_factor doesn't go too low
+      if (performance === 'forgot') {
+        ease_factor = Math.max(MIN_EASE_FACTOR, ease_factor - 0.20);
+      }
+      
+      // 4. Set new due_date
+      const newDueDate = new Date();
+      newDueDate.setDate(newDueDate.getDate() + interval); 
+
+      // 5. Update the card in the database
+      const { data: updatedCard, error: updateError } = await supabase
+        .from('flashcards')
+        .update({
+          interval: interval,
+          ease_factor: ease_factor,
+          review_count: review_count,
+          due_date: newDueDate.toISOString()
+        })
+        .eq('id', cardId)
+        .select()
+        .single();
+      
+      if (updateError) {
+        throw new Error(`Failed to update flashcard: ${updateError.message}`);
+      }
+
+      return updatedCard;
+
+    } catch (err: any) {
+      console.error('Update Flashcard Review Error:', err.message);
+      throw new Error(`Failed to update review: ${err.message}`);
+    }
+  }
   private static generateMockFlashcards(userId: string, subject: string, count: number): any[] {
     console.log('Using mock flashcards as fallback');
     return Array.from({ length: count }, (_, index) => ({
