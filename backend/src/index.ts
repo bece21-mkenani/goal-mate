@@ -4,18 +4,18 @@ import { AuthService } from './auth.service';
 import { AIService } from './ai.service';
 import { StudyPlanService } from './study-plan.service';
 import { FlashcardService } from './flashcard.service';
+import { AnalyticsService } from './AnalyticsService';
 import { UserService } from './UserService';
 
 const app = express();
 const port = process.env.PORT || 3036;
 
-// Middleware
+/* ====================== MIDDLEWARE ====================== */
 app.use(cors());
 app.use(express.json());
 
 /* ====================== AUTH ROUTES ====================== */
 
-// Sign up
 app.post('/auth/signup', async (req: Request, res: Response) => {
   try {
     const { email, password, name } = req.body;
@@ -35,7 +35,6 @@ app.post('/auth/signup', async (req: Request, res: Response) => {
   }
 });
 
-// Sign in
 app.post('/auth/signin', async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -50,8 +49,6 @@ app.post('/auth/signin', async (req: Request, res: Response) => {
     res.status(400).json({ error: err.message });
   }
 });
-
-// Get user
 app.get('/auth/user', async (req: Request, res: Response) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
@@ -66,8 +63,6 @@ app.get('/auth/user', async (req: Request, res: Response) => {
     res.status(401).json({ error: err.message });
   }
 });
-
-// Sign out
 app.post('/auth/signout', async (req: Request, res: Response) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
@@ -186,7 +181,6 @@ app.post('/flashcard/generate', async (req: Request, res: Response) => {
     res.status(400).json({ error: err.message });
   }
 });
-// GET: Fetch all flashcards due for review
 app.get('/flashcards/review', async (req: Request, res: Response) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
@@ -203,7 +197,6 @@ app.get('/flashcards/review', async (req: Request, res: Response) => {
   }
 });
 
-// POST: Update a flashcard's review status
 app.post('/flashcards/review/:cardId', async (req: Request, res: Response) => {
   try {
     const { cardId } = req.params;
@@ -270,6 +263,39 @@ app.get('/user/achievements', async (req: Request, res: Response) => {
     res.json({ achievements });
   } catch (err: any) {
     console.error('Get Achievements Error:', err.message);
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/* ====================== ANALYTICS ROUTES ====================== */
+app.get('/analytics/subject-breakdown', async (req: Request, res: Response) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) throw new Error('No token provided');
+    
+    const user = await AuthService.getUser(token);
+    if (!user) throw new Error('User not found');
+
+    const data = await AnalyticsService.getSubjectBreakdown(user.id, token);
+    res.json({ data });
+  } catch (err: any) {
+    console.error('Get Subject Breakdown Error:', err.message);
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/analytics/time-series', async (req: Request, res: Response) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) throw new Error('No token provided');
+    
+    const user = await AuthService.getUser(token);
+    if (!user) throw new Error('User not found');
+
+    const data = await AnalyticsService.getTimeSeries(user.id, token);
+    res.json({ data });
+  } catch (err: any) {
+    console.error('Get Time Series Error:', err.message);
     res.status(400).json({ error: err.message });
   }
 });

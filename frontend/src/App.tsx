@@ -1,14 +1,15 @@
-import React, { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import React, { createContext, useEffect, useState } from 'react';
+import AdvancedAnalytics from './components/AdvancedAnalytics';
 import AuthForm from './components/AuthForm';
 import Chat from './components/Chat';
-import StudyPlan from './components/StudyPlan';
 import Flashcard from './components/Flashcard';
-import UserProfile from './components/UserProfile';
 import Navbar from './components/Navbar';
-import StudySessionTimer from './components/StudySessionTimer';
 import ReviewSession from './components/ReviewSession';
+import StudyPlan from './components/StudyPlan';
+import StudySessionTimer from './components/StudySessionTimer';
+import UserProfile from './components/UserProfile';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3036';
 
@@ -22,7 +23,7 @@ export const ThemeContext = createContext<ThemeContextType>({
   toggleTheme: () => {},
 });
 
-type Page = 'chat' | 'study-plan' | 'flashcard' | 'profile' | 'timer';
+type Page = 'chat' | 'study-plan' | 'flashcard' | 'profile' | 'timer'| 'analytics';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -147,7 +148,17 @@ const App: React.FC = () => {
                       <Chat />
                     </motion.div>
                   )}
-                  
+                    {currentPage === 'analytics' && (
+                      <motion.div
+                        key="analytics"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <AdvancedAnalytics />
+                      </motion.div>
+                    )}
                   {currentPage === 'study-plan' && (
                     <motion.div
                       key="study-plan"
