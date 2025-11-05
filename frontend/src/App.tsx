@@ -10,7 +10,9 @@ import ReviewSession from './components/ReviewSession';
 import StudyPlan from './components/StudyPlan';
 import StudySessionTimer from './components/StudySessionTimer';
 import UserProfile from './components/UserProfile';
-
+import { SocketProvider } from './contexts/SocketContext';
+import StudyGroups from './components/StudyGroups'; 
+import GroupChat from './components/GroupChat';
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3036';
 
 interface ThemeContextType {
@@ -23,7 +25,7 @@ export const ThemeContext = createContext<ThemeContextType>({
   toggleTheme: () => {},
 });
 
-type Page = 'chat' | 'study-plan' | 'flashcard' | 'profile' | 'timer'| 'analytics';
+type Page = 'chat' | 'study-plan' | 'flashcard' | 'profile' | 'timer'| 'analytics'| 'groups';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -32,6 +34,7 @@ const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('chat');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isReviewing, setIsReviewing] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
 
   const toggleTheme = () => {
     setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark');
@@ -98,17 +101,20 @@ const App: React.FC = () => {
     setCurrentPage('chat');
     setIsMobileMenuOpen(false);
     setIsReviewing(false);
+    setSelectedGroupId(null);
   };
 
   const handlePageChange = (page: Page) => {
     setCurrentPage(page);
     setIsMobileMenuOpen(false);
     setIsReviewing(false);
+    setSelectedGroupId(null);
   };
 
   const handleBackToDashboard = () => {
     setCurrentPage('chat');
     setIsReviewing(false);
+    setSelectedGroupId(null);
   };
 
   if (isLoading) {
@@ -123,6 +129,7 @@ const App: React.FC = () => {
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
         {isAuthenticated ? (
+        <SocketProvider>
           <>
             <Navbar
               currentPage={currentPage}
@@ -210,7 +217,38 @@ const App: React.FC = () => {
                       <StudySessionTimer />
                     </motion.div>
                   )}
-                  
+                       {currentPage === 'groups' && (
+                        <div key="groups-page">
+                          <AnimatePresence mode="wait">
+                            {!selectedGroupId ? (
+                              // Show the Group Lobby
+                              <motion.div
+                                key="group-lobby"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                transition={{ duration: 0.3 }}
+                              >
+                                <StudyGroups onSelectGroup={(groupId) => setSelectedGroupId(groupId)} />
+                              </motion.div>
+                            ) : (
+                              // Show the specific Group Chat
+                              <motion.div
+                                key="group-chat"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                transition={{ duration: 0.3 }}
+                              >
+                                <GroupChat
+                                  groupId={selectedGroupId}
+                                  onBack={() => setSelectedGroupId(null)}
+                                />
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                    )}         
                   {currentPage === 'profile' && (
                     <motion.div
                       key="profile"
@@ -226,6 +264,7 @@ const App: React.FC = () => {
               </div>
             </main>
           </>
+        </SocketProvider>
         ) : (
           <div className="flex items-center justify-center min-h-screen p-4 sm:p-6 md:p-8">
             <AuthForm onAuthSuccess={handleAuthSuccess} />

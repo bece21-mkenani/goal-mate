@@ -1,4 +1,6 @@
 packages:
-  - 'frontend'
-  - 'backend'
+  - frontend
+  - backend
 
+ignoredBuiltDependencies:
+  - esbuild

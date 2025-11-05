@@ -12,14 +12,15 @@ import {
   X,
   Menu,
   Timer,
-  BarChart3
+  BarChart3,
+  Users
 } from 'lucide-react';
 
 import { CreditCard as Cards } from 'lucide-react';
 
 interface NavbarProps {
-  currentPage: 'chat' | 'study-plan' | 'flashcard' | 'profile'|'timer'| 'analytics';
-  onPageChange: (page: 'chat' | 'study-plan' | 'flashcard' | 'profile'|'timer'| 'analytics') => void;
+  currentPage: 'chat' | 'study-plan' | 'flashcard' | 'profile'|'timer'| 'analytics'| 'groups';
+  onPageChange: (page: 'chat' | 'study-plan' | 'flashcard' | 'profile'|'timer'| 'analytics'| 'groups') => void;
   onLogout: () => void;
   onToggleTheme: () => void;
   theme: string;
@@ -42,6 +43,7 @@ const Navbar: React.FC<NavbarProps> = ({
     { id: 'flashcard' as const, label: 'Flashcards', icon: Cards },
     { id: 'timer' as const, label: 'Timer', icon: Timer },
     { id: 'analytics' as const, label: 'Analytics', icon: BarChart3 },
+    { id: 'groups' as const, label: 'Groups', icon: Users },
     { id: 'profile' as const, label: 'Profile', icon: User },
   ];
 

@@ -1,18 +1,32 @@
-import express, { Request, Response } from 'express';
 import cors from 'cors';
-import { AuthService } from './auth.service';
+import express, { Request, Response } from 'express';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import { AIService } from './ai.service';
-import { StudyPlanService } from './study-plan.service';
-import { FlashcardService } from './flashcard.service';
 import { AnalyticsService } from './AnalyticsService';
+import { AuthService } from './auth.service';
+import { FlashcardService } from './flashcard.service';
+import { GroupService } from './GroupService';
+import { StudyPlanService } from './study-plan.service';
 import { UserService } from './UserService';
-
+import dotenv from 'dotenv';
+dotenv.config();
 const app = express();
 const port = process.env.PORT || 3036;
+const httpServer = createServer(app); 
 
 /* ====================== MIDDLEWARE ====================== */
 app.use(cors());
 app.use(express.json());
+
+/* ====================== SOCKET.IO SETUP ====================== */
+
+const io = new Server(httpServer, { 
+  cors: {
+    origin: "http://localhost:5173", 
+    methods: ["GET", "POST"]
+  }
+});
 
 /* ====================== AUTH ROUTES ====================== */
 
@@ -300,8 +314,211 @@ app.get('/analytics/time-series', async (req: Request, res: Response) => {
   }
 });
 
-/* ====================== SERVER START ====================== */
+/* ====================== GROUP ROUTES ====================== */
 
-app.listen(port, () => {
-  console.log(`🚀 Server running on port ${port}`);
+// Get all groups
+app.get('/groups', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) throw new Error('No token provided');
+    const groups = await GroupService.getAllGroups(token);
+    res.json({ groups });
+  } catch (err: any) {
+    console.error('Get Groups Error:', err.message);
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Create a new group
+app.get('/groups/me', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) throw new Error('No token provided');
+    
+    const user = await AuthService.getUser(token);
+    if (!user) throw new Error('User not found');
+
+    const groupIds = await GroupService.getMyGroupIds(user.id, token);
+    res.json({ groupIds });
+  } catch (err: any) {
+    console.error('Get My Groups Error:', err.message);
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/groups', async (req, res) => {
+  try {
+    const { name, description } = req.body;
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) throw new Error('No token provided');
+    
+    const user = await AuthService.getUser(token);
+    if (!user) throw new Error('User not found');
+
+    const group = await GroupService.createGroup(user.id, name, description, token);
+    res.status(201).json({ group });
+  } catch (err: any) {
+    console.error('Create Group Error:', err.message);
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Get details for a single group
+app.get('/groups/:groupId', async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) throw new Error('No token provided');
+    
+    const group = await GroupService.getGroupDetails(groupId, token);
+    res.json({ group });
+  } catch (err: any) {
+    console.error('Get Group Details Error:', err.message);
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Join a group
+app.post('/groups/:groupId/join', async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) throw new Error('No token provided');
+    
+    const user = await AuthService.getUser(token);
+    if (!user) throw new Error('User not found');
+
+    await GroupService.joinGroup(user.id, groupId, token);
+    res.json({ message: 'Joined group successfully' });
+  } catch (err: any) {
+    console.error('Join Group Error:', err.message);
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Leave a group
+app.delete('/groups/:groupId/leave', async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) throw new Error('No token provided');
+    
+    const user = await AuthService.getUser(token);
+    if (!user) throw new Error('User not found');
+
+    await GroupService.leaveGroup(user.id, groupId, token);
+    res.json({ message: 'Left group successfully' });
+  } catch (err: any) {
+    console.error('Leave Group Error:', err.message);
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Get a group's message history
+app.get('/groups/:groupId/messages', async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) throw new Error('No token provided');
+
+    const messages = await GroupService.getGroupMessages(groupId, token);
+    res.json({ messages });
+  } catch (err: any) {
+    console.error('Get Messages Error:', err.message);
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/*======================= GET MY GROUPS ====================== */
+
+
+/* ====================== SOCKET.IO LOGIC ====================== */
+io.use(async (socket, next) => {
+  const token = socket.handshake.auth.token;
+  if (!token) {
+    return next(new Error('Authentication error: No token provided.'));
+  }
+  try {
+    const user = await AuthService.getUser(token);
+    if (!user) {
+      return next(new Error('Authentication error: Invalid user.'));
+    }
+    (socket as any).user = user; 
+    next();
+  } catch (err) {
+    next(new Error('Authentication error: Invalid token.'));
+  }
+});
+
+// --- NEW: Socket.io Connection Logic ---
+io.on('connection', (socket) => {
+  const user = (socket as any).user; 
+
+  if (!user) {
+    console.error('Socket connected, but user object is missing. Disconnecting.');
+    socket.disconnect();
+    return;
+  }
+
+  console.log(`✅ User connected: ${user.email} (ID: ${user.id})`);
+
+  // Event: Client joins a group's room
+  socket.on('join_group', (groupId: string) => {
+    socket.join(groupId);
+    console.log(`User ${user.id} joined room ${groupId}`);
+  });
+
+  // Event: Client sends a new message
+  socket.on('send_message', async (payload: { groupId: string, content: string }) => {
+    const { groupId, content } = payload;
+    try {
+      // 1. Save the message to the database
+      const savedMessage = await GroupService.saveMessage(user.id, groupId, content);
+
+      // 2. Prepare the broadcast object
+      const broadcastMessage = {
+        ...savedMessage,
+        users: { // This matches our getGroupMessages query
+          name: user.name,
+          avatar_url: (user as any).avatar_url || null
+        }
+      };
+
+      // 3. Broadcast the new message
+      io.to(groupId).emit('receive_message', broadcastMessage);
+    
+    } catch (err: any) {
+      console.error('Socket send_message error:', err.message);
+      socket.emit('error_message', 'Failed to send message.');
+    }
+  });
+
+  // --- NEW: Typing Indicator Events ---
+  socket.on('typing_start', (groupId: string) => {
+    // Broadcast to everyone *except* the user who is typing
+    socket.to(groupId).emit('user_typing_start', {
+      userId: user.id,
+      name: user.name,
+    });
+  });
+
+  socket.on('typing_stop', (groupId: string) => {
+    // Broadcast to everyone *except* the user who is typing
+    socket.to(groupId).emit('user_typing_stop', {
+      userId: user.id,
+    });
+  });
+  // --- END NEW EVENTS ---
+
+  // Event: Client disconnects
+  socket.on('disconnect', () => {
+    console.log(`❌ User disconnected: ${user.email}`);
+  });
+});
+// --- End Socket.io Logic ---
+
+
+// --- We listen on the httpServer, NOT the 'app' ---
+httpServer.listen(port, () => {
+  console.log(`🚀 Server & Socket.io running on port ${port}`);
 });
