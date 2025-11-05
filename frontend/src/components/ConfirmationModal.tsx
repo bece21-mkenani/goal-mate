@@ -51,7 +51,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             aria-modal="true"
             aria-labelledby="modal-title"
           >
-            <div className="flex items-start">
+            <div className="flex items-center flex-col">
               {/* Icon */}
               <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30 sm:mx-0 sm:h-10 sm:w-10">
                 <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" aria-hidden="true" />
@@ -72,7 +72,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             </div>
 
             {/* Buttons */}
-            <div className="mt-6 flex flex-col sm:flex-row-reverse gap-3">
+            <div className="mt-6 flex flex-row-reverse gap-3">
               <motion.button
                 type="button"
                 className="flex w-full justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 disabled:opacity-50"

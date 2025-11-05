@@ -130,8 +130,8 @@ const StudyGroups: React.FC<StudyGroupsProps> = ({ onSelectGroup }) => {
         <motion.button
           onClick={() => setIsCreating(true)}
           className="flex-shrink-0 w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg shadow-lg flex items-center justify-center gap-2"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          whileHover={{ opacity: 0.8}}
+          whileTap={{ opacity: 0.8}}
         >
           <Plus size={20} />
           Create Group

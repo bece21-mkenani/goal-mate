@@ -2,13 +2,17 @@ import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
+import { NotificationService } from './NotificationService';
+
 dotenv.config();
+
 const supabaseUrl = 'https://tfdghduqsaniszkvzyhl.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZGdoZHVxc2FuaXN6a3Z6eWhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMzIwMTcsImV4cCI6MjA3NDcwODAxN30.8ga6eiQymTcO3OZLGDe3WuAHkWcxgRA9ywG3xJ6QzNI';
 
+const supabaseAdmin = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_KEY!);
+
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!);
 
-// --- Spaced Repetition (SM-2) Constants ---
 const MIN_EASE_FACTOR = 1.3;
 
 export class FlashcardService {
@@ -53,7 +57,7 @@ export class FlashcardService {
       console.log('Generating flashcards with AI for subject:', subject);
       
       const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.0-flash",
+        model: "gemini-2.0-flash", 
         generationConfig: {
           maxOutputTokens: 1000,
           temperature: 0.7,
@@ -62,32 +66,10 @@ export class FlashcardService {
 
       const prompt = `
         You are Goal Mate, an AI tutor creating educational flashcards.
-        
         Create ${count} high-quality flashcards about "${subject}".
-        
-        Requirements:
-        - Each flashcard should have a clear FRONT (question/term/concept) and BACK (answer/definition/explanation)
-        - Make the content educational and accurate
-        - Cover different aspects of the subject
-        - Questions should be clear and answers should be informative but concise
-        - Make it suitable for students learning this subject
-        
         Format your response as a JSON array where each item has:
         - "front": the question/term (string)
         - "back": the answer/definition (string)
-        
-        Example:
-        [
-          {
-            "front": "What is photosynthesis?",
-            "back": "The process by which plants convert sunlight, water, and carbon dioxide into glucose and oxygen."
-          },
-          {
-            "front": "What are the reactants of photosynthesis?",
-            "back": "Carbon dioxide, water, and light energy."
-          }
-        ]
-        
         Return ONLY the JSON array, no additional text.
       `;
 
@@ -106,16 +88,16 @@ export class FlashcardService {
         return this.generateMockFlashcards(userId, subject, count);
       }
       return flashcardsData.map((card: any, index: number) => ({
-      id: uuidv4(),
-      user_id: userId,
-      subject: subject,
-      front: card.front || `Question ${index + 1} about ${subject}`,
-      back: card.back || `Answer ${index + 1} explaining ${subject} concept`,
-      created_at: new Date().toISOString(),
-      due_date: new Date().toISOString(),
-      interval: 1.0,
-      ease_factor: 2.5,
-      review_count:0
+        id: uuidv4(),
+        user_id: userId,
+        subject: subject,
+        front: card.front || `Question ${index + 1} about ${subject}`,
+        back: card.back || `Answer ${index + 1} explaining ${subject} concept`,
+        created_at: new Date().toISOString(),
+        due_date: new Date().toISOString(),
+        interval: 1.0,
+        ease_factor: 2.5,
+        review_count: 0
       }));
 
     } catch (error: any) {
@@ -123,7 +105,7 @@ export class FlashcardService {
       return this.generateMockFlashcards(userId, subject, count);
     }
   }
-  // -- Get cards due for review ---
+  
   static async getReviewDeck(userId: string, accessToken: string): Promise<any[]> {
     try {
       const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -150,7 +132,6 @@ export class FlashcardService {
     }
   }
 
-  // ---Updating  a card after review ---
   static async updateFlashcardReview(
     cardId: string,
     userId: string,
@@ -163,7 +144,6 @@ export class FlashcardService {
         global: { headers: { Authorization: `Bearer ${accessToken}` } },
       });
 
-      // 1. Get the card's current state
       const { data: card, error: fetchError } = await supabase
         .from('flashcards')
         .select('interval, ease_factor, review_count')
@@ -177,7 +157,6 @@ export class FlashcardService {
 
       let { interval, ease_factor, review_count } = card;
 
-      // 2. Calculating new SR values based on performance
       if (performance === 'forgot') {
         review_count = 0; 
         interval = 1; 
@@ -185,7 +164,7 @@ export class FlashcardService {
         review_count += 1;
 
         if (performance === 'good') {
-    
+          // No change to ease_factor
         } else if (performance === 'easy') {
           ease_factor += 0.15; 
         }
@@ -198,16 +177,13 @@ export class FlashcardService {
         }
       }
 
-      // 3. Ensuring ease_factor doesn't go too low
       if (performance === 'forgot') {
         ease_factor = Math.max(MIN_EASE_FACTOR, ease_factor - 0.20);
       }
       
-      // 4. Set new due_date
       const newDueDate = new Date();
       newDueDate.setDate(newDueDate.getDate() + interval); 
 
-      // 5. Update the card in the database
       const { data: updatedCard, error: updateError } = await supabase
         .from('flashcards')
         .update({
@@ -231,15 +207,60 @@ export class FlashcardService {
       throw new Error(`Failed to update review: ${err.message}`);
     }
   }
+
   private static generateMockFlashcards(userId: string, subject: string, count: number): any[] {
     console.log('Using mock flashcards as fallback');
     return Array.from({ length: count }, (_, index) => ({
       id: uuidv4(),
       user_id: userId,
       subject: subject,
-      front: `What is an important concept about ${subject}?`,
-      back: `This is a key concept in ${subject} that helps understand the subject better.`,
+      front: `What is an important concept about ${subject}? (Mock)`,
+      back: `This is a key concept in ${subject}. (Mock)`,
       created_at: new Date().toISOString(),
+      due_date: new Date().toISOString(),
+      interval: 1.0,
+      ease_factor: 2.5,
+      review_count: 0
     }));
+  }
+  
+  // --- NEW: Function for the cron job ---
+// --- NEW: Function for the cron job ---
+  static async sendReviewNotifications() {
+    try {
+      console.log('CronJob: Checking for flashcard reviews...');
+
+      // --- THIS IS THE FIX ---
+      // We are calling the custom SQL function we created.
+      const { data: usersToNotify, error } = await supabaseAdmin
+        .rpc('get_users_with_due_reviews');
+      // --- END FIX ---
+
+      if (error) {
+        console.error('CronJob Error (find flashcard users):', error.message);
+        return;
+      }
+
+      if (!usersToNotify || usersToNotify.length === 0) {
+        console.log('CronJob: No users with flashcards due.');
+        return;
+      }
+
+      console.log(`CronJob: Found ${usersToNotify.length} users with reviews due.`);
+      const notificationsToSend = usersToNotify.map((item: { user_id: string }) => 
+        NotificationService.sendNotification(
+          item.user_id,
+          'Flashcard Review Ready', 
+          'You have flashcards due for review. Keep your memory sharp!', 
+          '/flashcard'
+        )
+      );
+
+      await Promise.all(notificationsToSend);
+      console.log('CronJob: Sent all flashcard review notifications.');
+
+    } catch (err: any) {
+      console.error('CronJob: Unhandled flashcard error:', err.message);
+    }
   }
 }

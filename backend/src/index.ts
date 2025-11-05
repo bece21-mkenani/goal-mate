@@ -1,4 +1,5 @@
 import cors from 'cors';
+import dotenv from 'dotenv';
 import express, { Request, Response } from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -9,18 +10,20 @@ import { FlashcardService } from './flashcard.service';
 import { GroupService } from './GroupService';
 import { StudyPlanService } from './study-plan.service';
 import { UserService } from './UserService';
-import dotenv from 'dotenv';
+import { NotificationService } from './NotificationService';
+
+import cron from 'node-cron'; 
 dotenv.config();
 const app = express();
 const port = process.env.PORT || 3036;
 const httpServer = createServer(app); 
 
 /* ====================== MIDDLEWARE ====================== */
+
 app.use(cors());
 app.use(express.json());
 
 /* ====================== SOCKET.IO SETUP ====================== */
-
 const io = new Server(httpServer, { 
   cors: {
     origin: "http://localhost:5173", 
@@ -92,43 +95,51 @@ app.post('/auth/signout', async (req: Request, res: Response) => {
 });
 
 /* ====================== AI ROUTE ====================== */
-
-app.post('/ai/generate', async (req: Request, res: Response) => {
+app.post('/ai/generate', async (req, res) => {
   try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      throw new Error('No authorization token provided');
+    }
+
     const { userId, message } = req.body;
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token || !userId || !message)
-      throw new Error('Missing userId, message, or token');
+    if (!userId || !message) {
+      throw new Error('Missing userId or message in request body');
+    }
 
-    const response = await AIService.generateResponse(userId, message, token);
-    console.log('AI Response Success:', { userId, response });
+    // Call your AIService
+    const reply = await AIService.generateResponse(userId, message, token);
 
-    res.json({ response });
+    // Send the raw string reply back
+    res.json(reply);
+
   } catch (err: any) {
-    console.error('AI Generate Error:', err.message);
-    res.status(400).json({ error: err.message });
+    console.error('AI /generate Route Error:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
-
-/* ====================== STUDY PLAN ROUTES ====================== */
-
-app.post('/study-plan/generate', async (req: Request, res: Response) => {
+app.post('/study-plan/generate', async (req, res) => {
   try {
-    const { userId, subjects, timeSlots } = req.body;
+    const { subjects, timeSlots, startDate } = req.body; 
     const token = req.headers.authorization?.split(' ')[1];
-    if (!token || !userId || !subjects || !timeSlots)
-      throw new Error('Missing userId, subjects, timeSlots, or token');
+    if (!token) throw new Error('No token provided');
+    
+    const user = await AuthService.getUser(token);
+    if (!user) throw new Error('User not found');
 
-    const plan = await StudyPlanService.generatePlan(userId, subjects, timeSlots, token);
-    console.log('Study Plan Generate Success:', { userId, plan });
-
-    res.json({ plan });
+    const plan = await StudyPlanService.generatePlan(
+      user.id, 
+      subjects, 
+      timeSlots, 
+      startDate, 
+      token 
+    );
+    res.status(201).json({ plan });
   } catch (err: any) {
-    console.error('Study Plan Generate Error:', err.message);
+    console.error('Generate Plan Route Error:', err.message);
     res.status(400).json({ error: err.message });
   }
 });
-
 app.get('/study-plan/history/:userId', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
@@ -429,7 +440,61 @@ app.get('/groups/:groupId/messages', async (req, res) => {
   }
 });
 
-/*======================= GET MY GROUPS ====================== */
+/*============================= NOTIFICATION ROUTES ====================== */
+
+// Route to get VAPID public key
+app.get('/notifications/vapid-key', (req, res) => {
+  try {
+    const key = NotificationService.getVapidKey();
+    res.json({ publicKey: key });
+  } catch (err: any) {
+    console.error('Get Vapid Key Error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Route for the frontend to save its subscription
+app.post('/notifications/subscribe', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) throw new Error('No token provided');
+    
+    const user = await AuthService.getUser(token);
+    if (!user) throw new Error('User not found');
+
+    const subscription = req.body.subscription;
+    if (!subscription) throw new Error('No subscription object provided');
+
+    await NotificationService.saveSubscription(user.id, subscription, token);
+    res.status(201).json({ message: 'Subscription saved.' });
+  } catch (err: any) {
+    console.error('Subscribe Error:', err.message);
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// A test route to send a notification to yourself
+app.post('/notifications/test', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) throw new Error('No token provided');
+    
+    const user = await AuthService.getUser(token);
+    if (!user) throw new Error('User not found');
+
+    await NotificationService.sendNotification(
+      user.id,
+      'Test Notification',
+      'This is a test from Goal Mate!',
+      '/'
+    );
+    
+    res.json({ message: 'Test notification sent.' });
+  } catch (err: any) {
+    console.error('Test Notification Error:', err.message);
+    res.status(400).json({ error: err.message });
+  }
+});
 
 
 /* ====================== SOCKET.IO LOGIC ====================== */
@@ -449,8 +514,6 @@ io.use(async (socket, next) => {
     next(new Error('Authentication error: Invalid token.'));
   }
 });
-
-// --- NEW: Socket.io Connection Logic ---
 io.on('connection', (socket) => {
   const user = (socket as any).user; 
 
@@ -508,17 +571,28 @@ io.on('connection', (socket) => {
       userId: user.id,
     });
   });
-  // --- END NEW EVENTS ---
-
-  // Event: Client disconnects
   socket.on('disconnect', () => {
-    console.log(`❌ User disconnected: ${user.email}`);
+    console.log(`User disconnected: ${user.email}`);
   });
 });
-// --- End Socket.io Logic ---
 
 
-// --- We listen on the httpServer, NOT the 'app' ---
+console.log("Setting up cron jobs...");
+
+// Study Plan: Runs every hour
+cron.schedule('0 * * * *', () => {
+  console.log('CronJob: Running hourly task for study plan reminders...');
+  StudyPlanService.sendUpcomingSessionNotifications();
+});
+
+// --- 2. NEW: Flashcard Job ---
+// Runs every day at 9:00 AM
+cron.schedule('0 9 * * *', () => {
+  console.log('CronJob: Running daily task for flashcard reminders...');
+  FlashcardService.sendReviewNotifications();
+});
+
+console.log("Cron jobs scheduled.");
 httpServer.listen(port, () => {
-  console.log(`🚀 Server & Socket.io running on port ${port}`);
+  console.log(`Server & Socket.io running on port ${port}`);
 });

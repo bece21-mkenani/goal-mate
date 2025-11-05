@@ -1,10 +1,30 @@
 import axios from 'axios';
 import { motion, type Variants } from 'framer-motion';
-import { BookOpen, Calendar, ChevronRight, Clock, History, Loader2, Plus, Trash2 } from 'lucide-react';
+import { 
+  BookOpen, 
+  Calendar, 
+  ChevronRight, 
+  Clock, 
+  History, 
+  Loader2, 
+  Plus, 
+  Trash2, 
+  CalendarDays 
+} from 'lucide-react';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { ThemeContext } from '../App';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3036';
+
+/**
+ * Helper function to get today's date in YYYY-MM-DD format.
+ * This ensures the date input defaults to the user's local "today".
+ */
+const getLocalDateString = (date: Date) => {
+  const offset = date.getTimezoneOffset();
+  const adjustedDate = new Date(date.getTime() - (offset * 60 * 1000));
+  return adjustedDate.toISOString().split('T')[0];
+}
 
 interface StudyPlan {
   id: string;
@@ -23,7 +43,7 @@ interface PlanHistory {
   id: string;
   user_id: string;
   subjects: string[];
-  time_slots: number[];
+  time_slots: number[]; 
   schedule_count: number;
   created_at: string;
 }
@@ -38,6 +58,10 @@ const StudyPlan: React.FC = () => {
     { day: 4, hours: 3 },
     { day: 5, hours: 2 },
   ]);
+  
+  // State for the plan's start date
+  const [startDate, setStartDate] = useState(getLocalDateString(new Date()));
+
   const [plan, setPlan] = useState<StudyPlan | null>(null);
   const [planHistory, setPlanHistory] = useState<PlanHistory[]>([]);
   const [selectedHistoryPlan, setSelectedHistoryPlan] = useState<StudyPlan | null>(null);
@@ -90,8 +114,8 @@ const StudyPlan: React.FC = () => {
   };
 
   const handleGeneratePlan = async () => {
-    if (!subjects.length || !timeSlots.length) {
-      setError('Please add at least one subject and time slot');
+    if (!subjects.length || !timeSlots.length || !startDate) {
+      setError('Please add subjects, time slots, and a valid start date');
       return;
     }
 
@@ -108,15 +132,17 @@ const StudyPlan: React.FC = () => {
         { 
           userId, 
           subjects, 
-          timeSlots: timeSlots.map(slot => slot.hours) 
+          timeSlots: timeSlots.map(slot => slot.hours),
+          startDate: startDate 
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      
       console.log('Study Plan Response:', response.data);
       setPlan(response.data.plan);
       setSelectedHistoryPlan(null);
       setError(null);
-      setHasFetchedHistory(false);
+      setHasFetchedHistory(false); 
       await fetchPlanHistory();
     } catch (err: any) {
       console.error('Generate Plan Error:', err.response?.data || err.message);
@@ -125,6 +151,7 @@ const StudyPlan: React.FC = () => {
       setIsGenerating(false);
     }
   };
+
   const handleAddSubject = () => {
     setSubjects([...subjects, '']);
   };
@@ -195,18 +222,17 @@ const StudyPlan: React.FC = () => {
       className="w-full max-w-6xl mx-auto p-4 sm:p-6 bg-gray-50 dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 rounded-xl shadow-lg"
     >
       {/* Header */}
- <div className="text-center mb-10">
-  <div className="flex items-center justify-center gap-3 mb-4">
-    <Calendar className="w-9 h-9 text-blue-600 dark:text-blue-400" />
-    <h2 className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-      Study Plan Generator
-    </h2>
-  </div>
-  <p className="text-gray-600 dark:text-gray-300 px-6 text-sm sm:text-base max-w-md mx-auto leading-relaxed">
-    Create your personalized study schedule. Add subjects and time slots to generate an optimal earning plan.
-  </p>
-</div>
-
+      <div className="text-center mb-10">
+        <div className="flex items-center justify-center gap-3 mb-4">
+          <Calendar className="w-9 h-9 text-blue-600 dark:text-blue-400" />
+          <h2 className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Study Plan Generator
+          </h2>
+        </div>
+        <p className="text-gray-600 dark:text-gray-300 px-6 text-sm sm:text-base max-w-md mx-auto leading-relaxed">
+          Create your personalized study schedule. Add subjects and time slots to generate an optimal learning plan.
+        </p>
+      </div>
 
       {error && (
         <motion.div
@@ -281,7 +307,21 @@ const StudyPlan: React.FC = () => {
             <Clock className="w-5 h-5 text-orange-600" />
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Study Schedule</h3>
           </div>
-          
+
+          {/* Start Date Input */}
+          <div className="mb-6">
+            <label className="flex items-center text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <CalendarDays className="w-4 h-4 mr-2"/>
+              Plan Start Date
+            </label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              min={getLocalDateString(new Date())} 
+              className=" w-full sm:w-auto px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>    
           <div className="space-y-3 mb-4">
             {timeSlots.map((slot, index) => (
               <motion.div
@@ -332,7 +372,7 @@ const StudyPlan: React.FC = () => {
         </motion.div>
       </div>
 
-      {/* Generate Button - Fixed scaling and responsive */}
+      {/* Generate Button */}
       <div className="flex justify-center mb-8">
         <motion.button
           whileTap={{ scale: 0.99 }}

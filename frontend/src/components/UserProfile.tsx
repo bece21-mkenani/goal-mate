@@ -1,10 +1,14 @@
 
 import axios from 'axios';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 import { motion } from 'framer-motion';
 import {
   Award,
+  Bell,
+  BellOff,
   BookOpen,
   Clock,
+  Loader2,
   Target,
   TrendingUp,
   Trophy,
@@ -50,7 +54,14 @@ const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
   const [userInfo, setUserInfo] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  const { 
+    subscribeUser, 
+    isSubscribed, 
+    isSupported, 
+    permission,
+    isLoading: isPushLoading,
+    error: pushError
+  } = usePushNotifications();
   useEffect(() => {
     fetchUserData();
   }, []);
@@ -144,7 +155,40 @@ const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
       </div>
     );
   }
-
+const renderPushButton = () => {
+    if (!isSupported) {
+      return <p className="text-sm text-gray-500">Notifications not supported on this device.</p>;
+    }
+    if (permission === 'denied') {
+      return <p className="text-sm text-red-500">Notifications blocked. Please change in browser settings.</p>;
+    }
+    if (isSubscribed) {
+      return (
+        <div className="flex items-center gap-2 text-green-600">
+          <Bell size={18} />
+          <span>Notifications Enabled</span>
+        </div>
+      );
+    }
+    return (
+      <motion.button
+        onClick={subscribeUser}
+        disabled={isPushLoading}
+        className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold shadow-md"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        {isPushLoading ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <>
+            <BellOff size={18} />
+            Enable Notifications
+          </>
+        )}
+      </motion.button>
+    );
+  };
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -192,7 +236,19 @@ const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
           </div>
         </div>
       </motion.div>
-
+      {/* --- Notification Settings Section --- */}
+      <motion.div
+        className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 mb-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+          Notifications
+        </h3>
+        {renderPushButton()}
+        {pushError && <p className="text-sm text-red-500 mt-2">{pushError}</p>}
+      </motion.div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         {/* Statistics Cards */}
         <div className="lg:col-span-2 space-y-4">

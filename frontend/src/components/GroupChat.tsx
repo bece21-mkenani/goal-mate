@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Loader2, Send, AlertTriangle, LogOut } from 'lucide-react';
-import React, { useContext, useEffect, useState, useRef } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { AlertTriangle, ArrowLeft, Loader2, LogOut, Send } from 'lucide-react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { ThemeContext } from '../App';
 import { useSocket } from '../contexts/SocketContext';
 import ConfirmationModal from './ConfirmationModal'; // Import the custom modal
@@ -246,8 +246,8 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, onBack }) => {
             <motion.button
               onClick={onBack}
               className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
+              whileHover={{ opacity: 0.8}}
+              whileTap={{ opacity: 0.8}}
             >
               <ArrowLeft className="w-6 h-6 text-gray-600 dark:text-gray-300" />
             </motion.button>
@@ -266,8 +266,8 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, onBack }) => {
             onClick={handleLeaveGroup}
             title="Leave Group"
             className="p-2 rounded-full text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+            whileHover={{ opacity: 0.8 }}
+            whileTap={{ opacity: 0.8 }}
           >
             <LogOut className="w-5 h-5" />
           </motion.button>
@@ -342,8 +342,8 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, onBack }) => {
             type="submit"
             disabled={!isConnected || !newMessage.trim()}
             className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-lg disabled:opacity-50"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+            whileHover={{ opacity:0.8}}
+            whileTap={{ opacity:0.8}}
           >
             <Send className="w-5 h-5" />
           </motion.button>
@@ -358,7 +358,7 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, onBack }) => {
         isConfirming={isLeaving}
         title={`Leave "${groupDetails?.name}"?`}
         message="Are you sure you want to leave this group? You will have to re-join to see messages again."
-        confirmText="Leave Group"
+        confirmText="Exit"
       />
     </>
   );
