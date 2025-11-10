@@ -3,12 +3,11 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 
 dotenv.config();
-
-const supabaseUrl = 'https://tfdghduqsaniszkvzyhl.supabase.co';
-const supabaseKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZGdoZHVxc2FuaXN6a3Z6eWhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMzIwMTcsImV4cCI6MjA3NDcwODAxN30.0hR3x9i4K1yXj3y0j2Qz7b2Qz7b2Qz7b2Qz7b2Qz7b2Qz';
-
+const supabaseUrl = process.env.SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_ANON_KEY!;
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!);
 
+/*===========AI SERVICE ===========*/
 export class AIService {
   static async generateResponse(userId: string, message: string, accessToken: string): Promise<string> {
     try {
@@ -84,8 +83,6 @@ export class AIService {
       return response;
     } catch (err: any) {
       console.error('AI Generate Error:', err.message);
-      
-      // Enhanced error handling for quota issues
       if (err.message.includes('429') || err.message.includes('quota') || err.message.includes('exceeded')) {
         throw new Error('AI service quota exceeded. Please try again in a few moments or contact support.');
       }

@@ -31,7 +31,7 @@ interface TimeData {
 }
 
 // Colors for the pie chart
-const PIE_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82ca9d'];
+const PIE_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82ca9d', '#d0ed57', '#a4de6c', '#8dd1e1'];
 
 // Custom label for the pie chart (shows percentage)
 const RADIAN = Math.PI / 180;
@@ -108,7 +108,7 @@ const labelStyle = {
         <div className="flex items-center justify-center gap-3 mb-4">
           <BarChart3 className="w-9 h-9 text-blue-600 dark:text-blue-400" />
           <h2 className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Your Progress Dashboard
+            Your Progress 
           </h2>
         </div>
         <p className="text-gray-600 dark:text-gray-300 px-6 text-sm sm:text-base max-w-md mx-auto leading-relaxed">

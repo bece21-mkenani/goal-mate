@@ -5,11 +5,12 @@ import { NotificationService } from './NotificationService';
 
 dotenv.config();
 
-const supabaseUrl = 'https://tfdghduqsaniszkvzyhl.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZGdoZHVxc2FuaXN6a3Z6eWhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMzIwMTcsImV4cCI6MjA3NDcwODAxN30.8ga6eiQymTcO3OZLGDe3WuAHkWcxgRA9ywG3xJ6QzNI'; 
+const supabaseUrl = process.env.SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_KEY!;
 
 const supabaseAdmin = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_KEY!);
 
+/* === STUDY PLAN INTERFACE ===*/ 
 export interface StudyPlan {
   id: string;
   user_id: string;
@@ -23,6 +24,7 @@ export interface StudyPlan {
   created_at: string;
 }
 
+/* === PLAN HISTORY INTERFACE ===*/
 export interface PlanHistory {
   id: string;
   user_id: string;
@@ -31,6 +33,7 @@ export interface PlanHistory {
   created_at: string;
 }
 
+/*=== STUDY PLAN SERVICE ===*/
 export class StudyPlanService {
 
   static async generatePlan(
@@ -63,7 +66,7 @@ export class StudyPlanService {
         global: { headers: { Authorization: `Bearer ${accessToken}` } },
       });
       
-      // 1. Insert the main plan
+      /* 1. STORE STUDY PLAN METADATA ===*/
       const { data, error } = await supabase
         .from('study_plans')
         .insert([plan])
@@ -72,7 +75,7 @@ export class StudyPlanService {
 
       if (error) throw new Error(`Failed to store study plan: ${error.message}`);
       
-      // 2. Create all individual session rows
+      /* 2. STORE INDIVIDUAL PLAN SESSIONS ===*/
       const sessionsToInsert = [];
       const planStartDate = new Date(startDate);
 
@@ -89,7 +92,7 @@ export class StudyPlanService {
         });
       }
 
-      // Batch insert all sessions
+     /* ==== 3. BULK INSERT PLAN SESIONS ====*/
       const { error: sessionsError } = await supabase
         .from('study_plan_sessions')
         .insert(sessionsToInsert);
@@ -106,7 +109,7 @@ export class StudyPlanService {
     }
   }
 
-  // --- RESTORED: Full function body ---
+  /*=== FETCHING PLAN HISTORY ===*/
   static async getPlanHistory(userId: string, accessToken: string): Promise<PlanHistory[]> {
     try {
       const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -140,7 +143,7 @@ export class StudyPlanService {
     }
   }
 
-  // --- RESTORED: Full function body ---
+  /*=== FETCHING PLAN BY ID ===*/
   static async getPlanById(planId: string, accessToken: string): Promise<StudyPlan> {
     try {
       const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -170,7 +173,7 @@ export class StudyPlanService {
     }
   }
 
-  // --- RESTORED: Full function body ---
+  /*=== FETCHING USER PLANS ===*/
   static async getUserPlans(userId: string, accessToken: string): Promise<StudyPlan[]> {
     try {
       const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -196,15 +199,15 @@ export class StudyPlanService {
     }
   }
 
-  // --- NEW: Function for the cron job ---
+ /*==== CRON JOB FOR UPCOMING SESSIONS NOTIFICATIONS ====*/ 
   static async sendUpcomingSessionNotifications() {
     try {
       console.log('CronJob: Checking for upcoming study sessions...');
       const now = new Date();
-      // Look for sessions starting between now and 65 mins from now
+      /*=== 1. ONE HOUR AHEAD TIME WINDOW ===*/
       const inOneHour = new Date(now.getTime() + 65 * 60 * 1000); 
 
-      // 1. Find sessions that are due
+      /*==== FIND SESSIONS STARTING IN THE NEXT HOUR ====*/
       const { data: sessions, error } = await supabaseAdmin
         .from('study_plan_sessions')
         .select('id, user_id, subject')
@@ -224,7 +227,7 @@ export class StudyPlanService {
 
       console.log(`CronJob: Found ${sessions.length} sessions to notify.`);
 
-      // 2. Send notifications
+      /*=== 2. SENDING NOFICATIONS ===*/
       const notificationsToSend = sessions.map(session => 
         NotificationService.sendNotification(
           session.user_id,
@@ -236,7 +239,7 @@ export class StudyPlanService {
 
       await Promise.all(notificationsToSend);
 
-      // 3. Mark them as sent
+      /*=== 3.  MARKING NOTICATIONS AS SENT ===*/
       const sessionIds = sessions.map(s => s.id);
       const { error: updateError } = await supabaseAdmin
         .from('study_plan_sessions')

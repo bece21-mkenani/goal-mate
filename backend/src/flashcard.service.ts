@@ -6,16 +6,21 @@ import { NotificationService } from './NotificationService';
 
 dotenv.config();
 
-const supabaseUrl = 'https://tfdghduqsaniszkvzyhl.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZGdoZHVxc2FuaXN6a3Z6eWhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMzIwMTcsImV4cCI6MjA3NDcwODAxN30.8ga6eiQymTcO3OZLGDe3WuAHkWcxgRA9ywG3xJ6QzNI';
+const supabaseUrl = process.env.SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_ANON_KEY!;
 
+/*=== SUPABASE ADMIN CLIENT ===*/
 const supabaseAdmin = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_KEY!);
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!);
 
 const MIN_EASE_FACTOR = 1.3;
 
+
+/*=== FLASHCARD SERVICE ===*/
 export class FlashcardService {
+
+  /*=== GENERATE FLASHCARDS ===*/
   static async generateFlashcards(userId: string, subject: string, count: number, accessToken: string): Promise<any[]> {
     try {
       const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -51,7 +56,7 @@ export class FlashcardService {
       throw new Error(`Failed to generate flashcards: ${err.message}`);
     }
   }
-
+ /*=== GENERATE FLASHCARDS WITH AI ===*/
   private static async generateFlashcardsWithAI(userId: string, subject: string, count: number): Promise<any[]> {
     try {
       console.log('Generating flashcards with AI for subject:', subject);
@@ -106,6 +111,7 @@ export class FlashcardService {
     }
   }
   
+  /*=== GET REVIEW DECK ===*/
   static async getReviewDeck(userId: string, accessToken: string): Promise<any[]> {
     try {
       const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -132,6 +138,7 @@ export class FlashcardService {
     }
   }
 
+  /*=== UPDATE FLASHCARD REVIEW ===*/
   static async updateFlashcardReview(
     cardId: string,
     userId: string,
@@ -164,7 +171,6 @@ export class FlashcardService {
         review_count += 1;
 
         if (performance === 'good') {
-          // No change to ease_factor
         } else if (performance === 'easy') {
           ease_factor += 0.15; 
         }
@@ -208,6 +214,7 @@ export class FlashcardService {
     }
   }
 
+  /*=== GENERATE MOCK FLASHCARDS ===*/
   private static generateMockFlashcards(userId: string, subject: string, count: number): any[] {
     console.log('Using mock flashcards as fallback');
     return Array.from({ length: count }, (_, index) => ({
@@ -223,18 +230,11 @@ export class FlashcardService {
       review_count: 0
     }));
   }
-  
-  // --- NEW: Function for the cron job ---
-// --- NEW: Function for the cron job ---
+/*=== CRON JOB: SEND REVIEW NOTIFICATIONS ===*/
   static async sendReviewNotifications() {
     try {
-      console.log('CronJob: Checking for flashcard reviews...');
-
-      // --- THIS IS THE FIX ---
-      // We are calling the custom SQL function we created.
       const { data: usersToNotify, error } = await supabaseAdmin
         .rpc('get_users_with_due_reviews');
-      // --- END FIX ---
 
       if (error) {
         console.error('CronJob Error (find flashcard users):', error.message);
@@ -246,7 +246,7 @@ export class FlashcardService {
         return;
       }
 
-      console.log(`CronJob: Found ${usersToNotify.length} users with reviews due.`);
+      /*=== SEND NOFICATION==*/
       const notificationsToSend = usersToNotify.map((item: { user_id: string }) => 
         NotificationService.sendNotification(
           item.user_id,
@@ -255,10 +255,7 @@ export class FlashcardService {
           '/flashcard'
         )
       );
-
       await Promise.all(notificationsToSend);
-      console.log('CronJob: Sent all flashcard review notifications.');
-
     } catch (err: any) {
       console.error('CronJob: Unhandled flashcard error:', err.message);
     }

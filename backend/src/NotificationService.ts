@@ -4,15 +4,15 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const supabaseUrl = 'https://tfdghduqsaniszkvzyhl.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZGdoZHVxc2FuaXN6a3Z6eWhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMzIwMTcsImV4cCI6MjA3NDcwODAxN30.8ga6eiQymTcO3OZLGDe3WuAHkWcxgRA9ywG3xJ6QzNI';
+const supabaseUrl = process.env.SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_KEY!;
 
-// Admin client to bypass RLS
+
 const supabaseAdmin = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_KEY!);
 
-// Web-Push Setup
-const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
-const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+/* === WEB-PUSH CONFIGURATIN ===*/
+const vapidPublicKey = process.env.VAPID_PUBLIC_KEY!;
+const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY!;
 
 if (!vapidPublicKey || !vapidPrivateKey) {
   console.error(
@@ -28,14 +28,11 @@ if (!vapidPublicKey || !vapidPrivateKey) {
 }
 
 
+/*=== NOTIFICATION SERVICE ===*/
 export class NotificationService {
 
-  /**
-   * Saves a new push subscription for a user.
-   * This is called by the frontend and uses RLS.
-   */
+  /*=== SAVING USER SUBSCRIPTION ===*/
   static async saveSubscription(userId: string, subscription: any, accessToken: string) {
-    // This client uses the user's token to obey RLS
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: `Bearer ${accessToken}` } },
     });
@@ -54,13 +51,10 @@ export class NotificationService {
     return data;
   }
 
-  /**
-   * Sends a notification to a specific user.
-   * --- NOW CHECKS FOR 'premium' TIER ---
-   */
+/*=== SENDING NOFICATION === */
   static async sendNotification(userId: string, title: string, body: string, url: string = '/') {
     
-    // 1. Check if user is a 'premium' subscriber
+    /*=== 1. CHECKING USER SUBSCRIPTION TIER ===*/
     const { data: userProfile, error: profileError } = await supabaseAdmin
       .from('users')
       .select('subscription_tier')
@@ -77,7 +71,7 @@ export class NotificationService {
       return; 
     }
 
-    // 2. User is 'premium', get their subscriptions
+    /*=== 2. FETCHING USER SUBSCRIPTION ===*/
     const { data: subscriptions, error: subError } = await supabaseAdmin
       .from('push_subscriptions')
       .select('subscription_object')
@@ -88,20 +82,21 @@ export class NotificationService {
       return;
     }
 
-    // 3. Prepare payload
+    /* === 3. CRAFTING PAYLOAD ===*/
     const payload = JSON.stringify({
       title,
       body,
       data: { urlToOpen: url }
     });
 
-    // 4. Send to all devices
+    /* ==== 4. SENDING NOTIFICSTIONS TO ALL SUBSCRIPTIONS ====*/
     const sendPromises = subscriptions.map(sub => {
       return webpush.sendNotification(sub.subscription_object, payload)
         .catch(err => {
           console.error(`Notification failed for ${userId}: ${err.message}`);
           if (err.statusCode === 410) {
-            // TODO: Delete this expired subscription
+
+            //--TO BE IMPLEMENTED: Delete this expired subscription---------
           }
         });
     });
@@ -109,10 +104,8 @@ export class NotificationService {
     await Promise.all(sendPromises);
     console.log(`Successfully sent 'premium' notification to ${userId}`);
   }
-
-  /**
-   * Provides the VAPID public key to the frontend.
-   */
+  
+  /*=== GET VAPID PUBLIC KEY ===*/
   static getVapidKey() {
     if (!vapidPublicKey) {
       throw new Error('VAPID Public Key is not configured.');

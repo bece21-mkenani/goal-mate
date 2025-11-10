@@ -1,22 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
-// --- 1. Load .env variables ---
+
 dotenv.config();
 
-const supabaseUrl = 'https://tfdghduqsaniszkvzyhl.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZGdoZHVxc2FuaXN6a3Z6eWhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMzIwMTcsImV4cCI6MjA3NDcwODAxN30.8ga6eiQymTcO3OZLGDe3WuAHkWcxgRA9ywG3xJ6QzNI';
+const supabaseUrl = process.env.SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_ANON_KEY!;
 
-// --- 2. Create the Admin Client ---
 const supabaseAdmin = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_KEY!);
 
 if (!process.env.SUPABASE_SERVICE_KEY) {
   console.error("CRITICAL ERROR: SUPABASE_SERVICE_KEY is not set in .env file (needed by GroupService)");
 }
 
+/*=== GROUP SERVICE ===*/
 export class GroupService {
-
-  // Get all groups (uses user's token)
   static async getAllGroups(accessToken: string) {
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: `Bearer ${accessToken}` } },
@@ -30,8 +28,7 @@ export class GroupService {
     if (error) throw error;
     return data;
   }
-
-  // Get a single group's details (uses user's token)
+/*=== GRT GROUP DETAILS ===*/
   static async getGroupDetails(groupId: string, accessToken: string) {
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: `Bearer ${accessToken}` } },
@@ -45,7 +42,7 @@ export class GroupService {
     return data;
   }
 
-  // Create a new group (unchanged, for user-created groups)
+/*=== CREATE GROUP ===*/
   static async createGroup(userId: string, name: string, description: string, accessToken: string) {
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: `Bearer ${accessToken}` } },
@@ -63,7 +60,7 @@ export class GroupService {
     return group;
   }
 
-  // Join a group (unchanged)
+ /*=== JOIN GROUP ===*/
   static async joinGroup(userId: string, groupId: string, accessToken: string) {
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: `Bearer ${accessToken}` } },
@@ -76,7 +73,7 @@ export class GroupService {
     return data;
   }
 
-  // --- MODIFIED --- Leave a group (blocks leaving admin group)
+  /*=== LEAVE GROUP ===*/
   static async leaveGroup(userId: string, groupId: string, accessToken: string) {
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: `Bearer ${accessToken}` } },
@@ -101,8 +98,7 @@ export class GroupService {
     if (error) throw error;
     return data;
   }
-
-  // --- MODIFIED --- Get chat history, now requires a roomName
+/*=== GET GROUP MESSAGES ===*/
   static async getGroupMessages(groupId: string, roomName: string, accessToken: string) {
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: `Bearer ${accessToken}` } },
@@ -129,7 +125,7 @@ export class GroupService {
     return data;
   }
 
-  // --- MODIFIED --- Save a message, now requires roomName and fileUrl
+ /* ===SAVE GROUP MESSAGE ===*/
   static async saveMessage(userId: string, groupId: string, roomName: string, content: string, fileUrl: string | null) {
     const { data, error } = await supabaseAdmin 
       .from('group_messages')
@@ -146,7 +142,7 @@ export class GroupService {
     return data;
   }
 
-  // Get a user's own group memberships (unchanged)
+/*=== GET MY GROUP IDS ===*/
   static async getMyGroupIds(userId: string, accessToken: string) {
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: `Bearer ${accessToken}` } },
@@ -159,8 +155,7 @@ export class GroupService {
     if (error) throw error;
     return data.map(item => item.group_id);
   }
-
-  // Get all user IDs for a given group (unchanged)
+/*=== GET IDS FOR ALL GROUP MEMBERS ===*/
   static async getGroupMembers(groupId: string): Promise<string[]> {
     const { data, error } = await supabaseAdmin
       .from('group_members')
@@ -174,7 +169,7 @@ export class GroupService {
     return data.map(item => item.user_id);
   }
 
-  // --- NEW --- Gets the list of rooms for a group (e.g., 'general', 'primary')
+/*=== GET GROUP ROOMS ===*/
   static async getGroupRooms(groupId: string, accessToken: string) {
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: `Bearer ${accessToken}` } },
@@ -188,7 +183,7 @@ export class GroupService {
     return data;
   }
 
-  // --- NEW --- Gets the user's saved education level
+/*=== CREATE GROUP  ROOMS ===*/
   static async getUserEducationLevel(userId: string, accessToken: string) {
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: `Bearer ${accessToken}` } },
@@ -200,40 +195,39 @@ export class GroupService {
       .single();
     
     if (error) {
-      if (error.code === 'PGRST116') return null; // No row found, which is fine
+      if (error.code === 'PGRST116') return null;
       throw error;
     }
     return data;
   }
 
-  // --- MODIFIED --- Saves the user's education level choice (ONE-TIME ONLY)
+/*=== SAVE USER EDUCTION LEVEL ===*/
   static async saveUserEducationLevel(userId: string, level: string, accessToken: string) {
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: `Bearer ${accessToken}` } },
     });
 
-    // 1. Check if a level is already set
+    /* CHECKING IF USER LEVEL ALREADY EXISTS*/
     const existingData = await this.getUserEducationLevel(userId, accessToken);
     if (existingData && existingData.level) {
       throw new Error("Education level is already set and cannot be changed.");
     }
 
-    // 2. If not, insert it
+   /*INSRTING NEW LEVEL*/
     const { data, error } = await supabase
       .from('user_education_level')
-      .insert({ user_id: userId, level: level }) // Use insert, not upsert
+      .insert({ user_id: userId, level: level }) 
       .select()
       .single();
     if (error) throw error;
     return data;
   }
 
-  // --- NEW --- Admin-only function to update a user's level
+ /*=== UPDATE USER EDUCATION LEVEL ADMIN ONLY ===*/
   static async updateUserEducationLevelAdmin(userId: string, level: string) {
-  // This function uses the admin client to bypass RLS and checks
   const { data, error } = await supabaseAdmin
     .from('user_education_level')
-    .upsert({ user_id: userId, level: level }, { onConflict: 'user_id' }) // Use upsert to create or update
+    .upsert({ user_id: userId, level: level }, { onConflict: 'user_id' }) 
     .select()
     .single();
 
@@ -241,7 +235,7 @@ export class GroupService {
   return data;
 }
 
-  // --- NEW --- Adds a read receipt for a message
+ /*=== ADD READ RECEIPT ===*/
   static async addReadReceipt(messageId: number, userId: string, accessToken: string) {
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: `Bearer ${accessToken}` } },
@@ -255,9 +249,10 @@ export class GroupService {
     return { success: true };
   }
 
-  // --- NEW --- Adds or removes a reaction from a message
+/* === ADD REACTION TO MESSAGE ===*/
+
   static async addReaction(messageId: number, userId: string, emoji: string) {
-    // 1. Get current reactions
+    /*=== FETCH CURRENT REACTIONS ===*/
     const { data: msg, error: fetchError } = await supabaseAdmin
       .from('group_messages')
       .select('reactions')
@@ -266,7 +261,7 @@ export class GroupService {
 
     if (fetchError) throw fetchError;
 
-    // 2. Modify the reactions object
+    /*=== MODIFY REACTIONS OBJECT ===*/
     let reactions = (msg.reactions || {}) as { [key: string]: string[] }; 
     
     if (reactions[emoji]) {
@@ -283,7 +278,7 @@ export class GroupService {
       reactions[emoji] = [userId];
     }
 
-    // 3. Update the message with new reactions
+   /*=== UPDATE REACTIONS IN DB ===*/
     const { data, error: updateError } = await supabaseAdmin
       .from('group_messages')
       .update({ reactions: reactions })

@@ -657,7 +657,7 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, roomName, onBack }) => {
                 </h2>
               ) : (
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white capitalize">
-                  {currentRoom} Students Group
+                  {currentRoom} Group
                 </h2>
               )}
                 <p className="text-gray-600 dark:text-gray-400 mt-1 line-clamp-1">

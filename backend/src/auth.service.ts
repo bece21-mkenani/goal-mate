@@ -1,30 +1,28 @@
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
-// Load .env variables
 dotenv.config();
 
-const supabaseUrl = 'https://tfdghduqsaniszkvzyhl.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZGdoZHVxc2FuaXN6a3Z6eWhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMzIwMTcsImV4cCI6MjA3NDcwODAxN30.8ga6eiQymTcO3OZLGDe3WuAHkWcxgRA9ywG3xJ6QzNI';
+const supabaseUrl = process.env.SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_ANON_KEY!;
 
-// Your Admin User ID for the check
-const ADMIN_USER_ID = '5f7c1297-267e-4cd8-98ac-ed27110c65c1';
+/*=== ADMIN USER ID ===*/
+const ADMIN_USER_ID =process.env.AMIN_USER_ID!;
 
-// The public client (for auth functions)
+/*=== SUPABASE CLIENTS ===*/
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// The admin client (for bypassing RLS to manage the 'users' table)
+/*=== ADMIN CLIENT ===*/
 const supabaseAdmin = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_KEY!);
 
 if (!process.env.SUPABASE_SERVICE_KEY) {
   console.error("CRITICAL ERROR: SUPABASE_SERVICE_KEY is not set in .env file");
 }
 
+/*=== AUTH SERVICE ===*/
 export class AuthService {
 
-  // -------------------------
-  // SIGN UP (Unchanged)
-  // -------------------------
+  /* === SIGN UP ===*/
   static async signUp(email: string, password: string, name: string) {
     if (!email || !password || !name) {
       throw new Error('Email, password, and name are required for signup');
@@ -58,10 +56,7 @@ export class AuthService {
       throw err;
     }
   }
-
-  // -------------------------
-  // SIGN IN (Unchanged)
-  // -------------------------
+   /*=== SIGN IN ===*/
   static async signIn(email: string, password: string) {
     console.log('Starting signin process:', { email });
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -90,27 +85,17 @@ export class AuthService {
       session: data.session?.access_token || null,
     };
   }
-
-  // -------------------------
-  // GET USER (--- THIS IS THE MODIFIED FUNCTION ---)
-  // -------------------------
+ /*=== GET USER DETAILS ===*/
   static async getUser(token: string) {
-    // 1. Use the PUBLIC client to validate the token
     const { data, error } = await supabase.auth.getUser(token);
     if (error) throw new Error(error.message);
     if (!data.user) throw new Error('No user found');
-
     const user = data.user;
-
-    // 2. Use the ADMIN client to ensure the profile exists
     await AuthService.ensureUserProfile(
       user.id,
       user.email!,
       user.user_metadata?.name || 'User'
     );
-
-    // 3. --- MODIFIED ---
-    // Fetch profile, subscription tier, AND education level
     const { data: combinedData, error: combinedError } = await supabaseAdmin
       .from('users')
       .select(`
@@ -126,15 +111,12 @@ export class AuthService {
       throw new Error(combinedError.message);
     }
     
-    // 4. Process the data
     const education = (combinedData as any)?.user_education_level;
     const isAdmin = user.id === ADMIN_USER_ID;
-
     return {
       id: user.id,
       email: user.email,
       name: combinedData?.name || user.user_metadata?.name || 'User',
-      // --- avatar_url line REMOVED ---
       created_at: user.created_at,
       last_sign_in_at: user.last_sign_in_at,
       subscription_tier: combinedData?.subscription_tier || 'free',
@@ -143,9 +125,8 @@ export class AuthService {
     };
   }
 
-  // -------------------------
-  // CREATE PROFILE (Unchanged)
-  // -------------------------
+  /*=== CREATE USER PROFILE ===*/
+
   static async createUserProfile(userId: string, email: string, name: string) {
     try {
       const { data: existingUser } = await supabaseAdmin
@@ -184,10 +165,7 @@ export class AuthService {
       throw err;
     }
   }
-
-  // -------------------------
-  // ENSURE PROFILE EXISTS (Unchanged)
-  // -------------------------
+/*=== ENSURE USER PROFILE EXISTS ===*/
   static async ensureUserProfile(userId: string, email: string, name: string) {
     try {
       const { data: existingUser, error: fetchError } = await supabaseAdmin
@@ -212,9 +190,7 @@ export class AuthService {
     }
   }
 
-  // -------------------------
-  // SIGN OUT (Unchanged)
-  // -------------------------
+  /*===SIGN OUT ===*/
   static async signOut() {
     const { error } = await supabase.auth.signOut();
     if (error) throw new Error(error.message);

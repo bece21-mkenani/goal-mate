@@ -599,9 +599,7 @@ io.on('connection', (socket) => {
   }
 
   (socket as any).currentRoom = null;
-  console.log(`✅ User connected: ${user.email} (ID: ${user.id})`);
   socket.join(user.id);
-
   const broadcastOnlineUsers = async (roomSocketName: string) => {
     try {
       const socketsInRoom = await io.in(roomSocketName).fetchSockets();
@@ -785,5 +783,5 @@ cron.schedule('0 9 * * *', () => {
 
 console.log("Cron jobs scheduled.");
 httpServer.listen(port, () => {
-  console.log(`🚀 Server & Socket.io running on port ${port}`);
+  console.log(` Server & Socket.io running on port ${port}`);
 });

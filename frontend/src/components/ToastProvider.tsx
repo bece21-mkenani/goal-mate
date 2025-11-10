@@ -16,7 +16,7 @@ const ToastProvider: React.FC = () => {
         },
         success: {
           style: {
-            background: 'linear-gradient(135deg, #16a34a, #22c55e)', 
+            background: 'linear-gradient(135deg, #0088FE, #00C49F,#8884D8,#82ca9d)', 
           },
           iconTheme: {
             primary: '#fff',

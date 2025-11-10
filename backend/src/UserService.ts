@@ -1,12 +1,14 @@
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+dotenv.config();
 
-const supabaseUrl = 'https://tfdghduqsaniszkvzyhl.supabase.co';
-const supabaseKey =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZGdoZHVxc2FuaXN6a3Z6eWhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMzIwMTcsImV4cCI6MjA3NDcwODAxN30.8ga6eiQymTcO3OZLGDe3WuAHkWcxgRA9ywG3xJ6QzNI';
+const supabaseUrl = process.env.SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_KEY!;
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+/* ==== INTERFACES FOR USER STATISTICS, ACHIEVEMENTS, STUDY SESSIONS ==== */
 export interface UserStatistics {
   id: string;
   user_id: string;
@@ -39,7 +41,10 @@ export interface StudySession {
   created_at: string;
 }
 
+/*=== USER SERVICES ===*/
 export class UserService {
+
+  /*=== FETCHING USER STATISTICS ===*/
   static async getUserStatistics(
     userId: string,
     accessToken: string
@@ -58,7 +63,7 @@ export class UserService {
       console.log('No stats found, creating new entry.');
       const { data: newStats, error: createError } = await supabaseAuth
         .from('user_statistics')
-        .insert([{ user_id: userId, total_sessions: 0 }]) // Ensure new field is initialized
+        .insert([{ user_id: userId, total_sessions: 0 }]) 
         .select()
         .single();
 
@@ -69,9 +74,8 @@ export class UserService {
 
     return statistics;
   }
-
+/*=== FETCHING ACHIEVEMENTS LIST ===*/
   static async getAchievements(accessToken: string): Promise<Achievement[]> {
-    // This implementation is fine as-is
     const supabaseAuth = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: `Bearer ${accessToken}` } },
     });
@@ -82,21 +86,21 @@ export class UserService {
     if (error) throw new Error(`Failed to fetch achievements: ${error.message}`);
     return data || [];
   }
-
+ /*=== RECORDING STUDY SESSION & UPDATING STATISTICS ===*/
   static async recordStudySession(
     userId: string,
     subject: string,
-    duration: number, // Duration in minutes from the frontend
+    duration: number,
     accessToken: string
   ): Promise<void> {
     const supabaseAuth = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: `Bearer ${accessToken}` } },
     });
 
-    // Calculate points (1 point per minute + bonus for 30+ mins)
+    /* === CALCULATING POINT EARNED===*/
     const pointsEarned = duration + (duration >= 30 ? 10 : 0);
 
-    // 1. Record session
+    /*=== 1. RECORDING STUDY SESSION ===*/
     const { error: sessionError } = await supabaseAuth
       .from('study_sessions')
       .insert([{ user_id: userId, subject, duration, points_earned: pointsEarned }]);
@@ -104,15 +108,11 @@ export class UserService {
     if (sessionError)
       throw new Error(`Failed to record study session: ${sessionError.message}`);
 
-    // 2. Update user statistics
+    /*=== 2. UPDATING USER STATISTICS ===*/
     await this.updateUserStatistics(userId, subject, pointsEarned, duration, accessToken);
   }
 
-  // --- PRIVATE METHODS ---
-
-  /**
-   * This is the core logic. It updates stats and then checks for new achievements.
-   */
+  /* === UPDATING USER STATISTICS (PRIVATE METHOSD)====*/
   private static async updateUserStatistics(
     userId: string,
     subject: string,
@@ -127,7 +127,7 @@ export class UserService {
     const stats = await this.getUserStatistics(userId, accessToken);
     const today = new Date().toISOString().split('T')[0];
 
-    // Calculate streak
+    /*=== CALCUALATING NEW STATISTICS VALUES ===*/
     let newStreak = stats.day_streak;
     if (stats.last_active_date) {
       const lastActive = new Date(stats.last_active_date);
@@ -137,28 +137,26 @@ export class UserService {
       );
 
       if (dayDiff === 1) {
-        newStreak = stats.day_streak + 1; // Consecutive day
+        newStreak = stats.day_streak + 1; 
       } else if (dayDiff > 1) {
-        newStreak = 1; // Streak broken
+        newStreak = 1; 
       }
-      // if dayDiff === 0, streak stays the same
     } else {
-      newStreak = 1; // First session
+      newStreak = 1; 
     }
 
-    // Update subjects studied
+   /*=== UPDATING STATISTICS IN DB ===*/
     const updatedSubjects = stats.subjects_studied.includes(subject)
       ? stats.subjects_studied
       : [...stats.subjects_studied, subject];
-
-    // Prepare update payload
+   /*=== PREPARING PAYLOAD ===*/   
     const newStats = {
       total_points: stats.total_points + pointsEarned,
       day_streak: newStreak,
       last_active_date: today,
       total_study_time: stats.total_study_time + duration,
       subjects_studied: updatedSubjects,
-      total_sessions: stats.total_sessions + 1, // <-- Increment total_sessions
+      total_sessions: stats.total_sessions + 1,
       updated_at: new Date().toISOString(),
     };
 
@@ -169,33 +167,28 @@ export class UserService {
 
     if (error) throw new Error(`Failed to update user statistics: ${error.message}`);
 
-    // 3. NEW STEP: Check for achievements after stats are updated
+    /* === CHECKING & AWARDING ACHIEVEMENTS ===*/
     await this.checkAndAwardAchievements(supabaseAuth, userId, { ...stats, ...newStats });
   }
-
-  /**
-   * NEW: Checks if the user's new stats qualify for any unearned achievements.
-   */
+  /* === CHECKING & AWARDING ACHIEVEMENTS (PRIVATE METHOD)===*/
   private static async checkAndAwardAchievements(
     supabase: SupabaseClient,
     userId: string,
     updatedStats: UserStatistics
   ): Promise<void> {
     try {
-      // 1. Get all achievements
+      /*=== GETTING ALL ACHIEVEMENTS ===*/
       const { data: allAchievements, error: achError } = await supabase
         .from('achievements')
         .select('*');
       if (achError) throw achError;
-
-      // 2. Filter for achievements the user does NOT have
       const unearnedAchievements = allAchievements.filter(
         (ach: Achievement) => !updatedStats.achievements_earned.includes(ach.id)
       );
 
       const newAchievementsToAward: string[] = [];
 
-      // 3. Check conditions
+      /*=== CHEACK CONDITION ===*/
       for (const ach of unearnedAchievements) {
         let conditionMet = false;
         switch (ach.condition_type) {
@@ -222,7 +215,7 @@ export class UserService {
         }
       }
 
-      // 4. Update user stats if new achievements were earned
+      /*=== UPDATING USER STAT ===*/
       if (newAchievementsToAward.length > 0) {
         const updatedAchievementList = [
           ...updatedStats.achievements_earned,

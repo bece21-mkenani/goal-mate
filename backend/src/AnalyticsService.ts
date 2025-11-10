@@ -1,19 +1,23 @@
 import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+dotenv.config();
 
-const supabaseUrl = 'https://tfdghduqsaniszkvzyhl.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZGdoZHVxc2FuaXN6a3Z6eWhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMzIwMTcsImV4cCI6MjA3NDcwODAxN30.8ga6eiQymTcO3OZLGDe3WuAHkWcxgRA9ywG3xJ6QzNI';
 
+const supabaseUrl = process.env.SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_ANON_KEY!;
+
+/*=========== ANALYTICS SERVICE ===========*/
 export class AnalyticsService {
 
 
-  /* Fetches study time grouped by subject for a pie chart. */
+  /*=== FETCHING SUBJECT BREAKDOWN ===========*/
 
   static async getSubjectBreakdown(userId: string, accessToken: string): Promise<any> {
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: `Bearer ${accessToken}` } },
     });
 
-    // Using an RPC (Remote Procedure Call)
+   /*=== FETCHING DATA FROM RPC FUNCTION ===*/
     const { data, error } = await supabase.rpc('get_subject_breakdown', { user_id_param: userId });
 
     if (error) {
@@ -23,8 +27,7 @@ export class AnalyticsService {
 
     return data;
   }
-
-     // Fetches study time over the last 7 days for a bar chart.
+/*=== FETCHING THE TIME SERIES DATA FROM RPC FUNCTION ===*/
 
   static async getTimeSeries(userId: string, accessToken: string): Promise<any> {
     const supabase = createClient(supabaseUrl, supabaseKey, {
