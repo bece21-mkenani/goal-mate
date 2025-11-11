@@ -166,7 +166,7 @@ To clone and run this project, you'll need to set up both the backend server and
 
 * Node.js (v18 or later)
 
-* npm
+* pnpm
 
 * A Supabase account (you will need a Project URL, anon key, and service key)
 
@@ -186,7 +186,7 @@ To clone and run this project, you'll need to set up both the backend server and
 2.  **Install dependencies:**
 
     ```bash
-    npm install
+    pnpm install
     ```
 
 3.  **Create your environment file:**
@@ -232,7 +232,7 @@ To clone and run this project, you'll need to set up both the backend server and
 5.  **Run the backend server:**
 
     ```bash
-    npm run dev
+    pnpm run dev
     ```
 
     Your server will be running at `http://localhost:3036`.
@@ -247,7 +247,7 @@ To clone and run this project, you'll need to set up both the backend server and
 2.  **Install dependencies:**
 
     ```bash
-    npm install
+    pnpm install
     ```
 
 3.  **Create your environment file:**
@@ -273,7 +273,7 @@ To clone and run this project, you'll need to set up both the backend server and
 4.  **Run the frontend client:**
 
     ```bash
-    npm run dev
+    pnpm run dev
     ```
     Your React app will open at `http://localhost:5173`.
 
