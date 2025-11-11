@@ -85,6 +85,32 @@
 * **TypeScript**
 
 * **Tailwind CSS**
+
+* **Framer Motion** (for animations)
+
+* **Socket.io Client**
+
+* **Axios**
+
+### Backend
+
+* **Node.js**
+
+* **Express**
+
+* **TypeScript**
+
+* **Socket.io**
+
+* **Supabase** (PostgreSQL Database, Auth, Storage)
+
+* **Google Gemini API** (for all AI features)
+
+* **Multer** (for file uploads)
+
+* **Web-Push** (for notifications)
+
+* **node-cron** (for scheduled jobs)
   
 # Goal-Mate Project Structure
 
