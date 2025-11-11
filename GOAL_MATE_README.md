@@ -1,29 +1,42 @@
-# Goal Mate: The AI-Powered education centered tool
+# GOAL MATE FIRST VERSION:
 
-Goal Mate is a comprehensive, full-stack application designed to help students organize, study, and collaborate. It combines the 
+* The AI-Powered education centered tool to bridge the gap between different students at defferent eduaction levels while helping them to have personalised studies and tracked learning path.
 
-power of AI for personalized learning with real-time, secure group chat features, all managed by a powerful admin dashboard.
+* In simple terms goal Mate is a comprehensive, full-stack application designed to help students organize, study, and collaborate. It combines the power of AI for personalized learning with real-time, secure group chat features, all managed by a powerful admin dashboard.
 
 ---
 
 ## Core Features
 
 
-* **AI Study Plan Generator:** Users can input their subjects and availability to receive a customized, weekly study schedule.
-
-* **Spaced Repetition Flashcards:** Generate flashcard decks on any subject and review them using a spaced repetition algorithm to maximize retention.
-
 * **Advanced Group Chat:**
 
-    * **Real-time Communication:** Built with Socket.io for instant messaging.
 
-    * **Secure Rooms:** Features a main "general" room and three education-level-locked rooms (Primary, Secondary, Tertiary).
+* **This is where users connect and engage — primarily in general groups.**
 
-    * **User Security:** Backend logic prevents users from joining or posting in rooms that don't match their **one-time-set** education level.
+* **All users can ask questions, share ideas, and get clarification from others.  
 
-    * **Rich Features:** Includes typing indicators, read receipts, emoji reactions, and a list of online users.
+* **Each user has access to only two groups:
 
-    * **File Uploads:** Users can upload images, PDFs, and text files directly to the chat, securely stored in Supabase Storage.
+- **General Group** — open to everyone  
+
+- **Education-Level Group** (*Primary*, *Secondary*, or *Tertiary*) — assigned based on the user’s selected education level  
+
+* **Users are allowed to set their education level only once.  
+
+* **Any future changes can **only be made by an admin** through the Admin Dashboard.  
+
+* **This restriction is designed to **enhance security** and **maintain group integrity** across the platform.
+
+ * **Real-time Communication:** Built with Socket.io for instant messaging.
+
+ * **Secure Rooms:** Features a main "general" room and three education-level-locked rooms (Primary, Secondary, Tertiary).
+
+ * **User Security:** Backend logic prevents users from joining or posting in rooms that don't match their **one-time-set** education level.
+
+ * **Rich Features:** Includes typing indicators, read receipts, emoji reactions, and a list of online users.
+
+* **File Uploads:** Users can upload images, PDFs, and text files directly to the chat, securely stored in Supabase Storage.**
 
 * **AI Chatbot:** An integrated chatbot (powered by Google's Gemini) to answer questions and assist with learning.  
 
@@ -38,7 +51,15 @@ power of AI for personalized learning with real-time, secure group chat features
 
 * **Push Notifications:** Uses web push notifications to alert users of upcoming study sessions, flashcard reviews, and new chat messages when they are offline.
 
-* **Voice API (Proof of Concept):** Includes a secure backend route (`/api/voice/summary`) designed to integrate with a voice assistant like Alexa or Google Assistant.
+
+* **Analytics** Give and overview of the study sesions and an insight of which course is give enought time.
+
+* **Timer** Enable a student to keep track of number of hours spent during studying.
+
+* **Profile** Here there is achieve section to motivate students on their studies, study tips and  Stat sction to keep track, set notification features and also a tool for a student to set education level
+
+
+
 
 ---
 
