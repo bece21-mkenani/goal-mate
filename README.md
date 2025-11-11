@@ -4,6 +4,9 @@
 
 * In simple terms goal Mate is a comprehensive, full-stack application designed to help students organize, study, and collaborate. It combines the power of AI for personalized learning with real-time, secure group chat features, all managed by a powerful admin dashboard.
 
+![Goal Mate admin Dashboard](https://tfdghduqsaniszkvzyhl.supabase.co/storage/v1/object/public/group_files/Screenshot%202025-11-11%20214304.png)
+![Goal Mate analytics Feature](https://tfdghduqsaniszkvzyhl.supabase.co/storage/v1/object/public/group_files/Screenshot%202025-11-08%20175309.png)
+
 ---
 
 ## Core Features
