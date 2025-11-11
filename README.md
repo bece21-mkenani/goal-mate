@@ -9,8 +9,8 @@
 ![Goal Mate admin Dashboard](https://tfdghduqsaniszkvzyhl.supabase.co/storage/v1/object/public/group_files/Screenshot%202025-11-11%20214304.png)
 
 
-* Goal Mate analytics Feature
-* 
+* Goal Mate analytics Photo
+
 ![Goal Mate analytics Feature](https://tfdghduqsaniszkvzyhl.supabase.co/storage/v1/object/public/group_files/Screenshot%202025-11-08%20175309.png)
 
 ---
