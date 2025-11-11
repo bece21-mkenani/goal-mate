@@ -57,6 +57,8 @@
 * **Timer** Enable a student to keep track of number of hours spent during studying.
 
 * **Profile** Here there is achieve section to motivate students on their studies, study tips and  Stat sction to keep track, set notification features and also a tool for a student to set education level
+  
+* **Study plan generator** a tool that is helping student to to be to set flexible time table, eliminating the need of having manual time table, it is an AI powered feature
 
 
 
