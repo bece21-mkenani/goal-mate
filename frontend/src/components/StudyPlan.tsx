@@ -1,30 +1,26 @@
-import axios from 'axios';
-import { motion, type Variants } from 'framer-motion';
-import { 
-  BookOpen, 
-  Calendar, 
-  ChevronRight, 
-  Clock, 
-  History, 
-  Loader2, 
-  Plus, 
-  Trash2, 
-  CalendarDays 
-} from 'lucide-react';
-import React, { useCallback, useContext, useEffect, useState } from 'react';
-import { ThemeContext } from '../App';
+import axios from "axios";
+import { motion, type Variants } from "framer-motion";
+import {
+  BookOpen,
+  Calendar,
+  ChevronRight,
+  Clock,
+  History,
+  Loader2,
+  Plus,
+  Trash2,
+  CalendarDays,
+} from "lucide-react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
+import { ThemeContext } from "../App";
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3036';
+const apiUrl = import.meta.env.VITE_API_URL!;
 
-/**
- * Helper function to get today's date in YYYY-MM-DD format.
- * This ensures the date input defaults to the user's local "today".
- */
 const getLocalDateString = (date: Date) => {
   const offset = date.getTimezoneOffset();
-  const adjustedDate = new Date(date.getTime() - (offset * 60 * 1000));
-  return adjustedDate.toISOString().split('T')[0];
-}
+  const adjustedDate = new Date(date.getTime() - offset * 60 * 1000);
+  return adjustedDate.toISOString().split("T")[0];
+};
 
 interface StudyPlan {
   id: string;
@@ -43,28 +39,34 @@ interface PlanHistory {
   id: string;
   user_id: string;
   subjects: string[];
-  time_slots: number[]; 
+  time_slots: number[];
   schedule_count: number;
   created_at: string;
 }
 
 const StudyPlan: React.FC = () => {
   useContext(ThemeContext);
-  const [subjects, setSubjects] = useState<string[]>(['GDP', 'Calculus','Statistics']);
-  const [timeSlots, setTimeSlots] = useState<Array<{ day: number; hours: number }>>([
+  const [subjects, setSubjects] = useState<string[]>([
+    "GDP",
+    "Calculus",
+    "Statistics",
+  ]);
+  const [timeSlots, setTimeSlots] = useState<
+    Array<{ day: number; hours: number }>
+  >([
     { day: 1, hours: 2 },
     { day: 2, hours: 3 },
     { day: 3, hours: 2 },
     { day: 4, hours: 3 },
     { day: 5, hours: 2 },
   ]);
-  
-  // State for the plan's start date
+
   const [startDate, setStartDate] = useState(getLocalDateString(new Date()));
 
   const [plan, setPlan] = useState<StudyPlan | null>(null);
   const [planHistory, setPlanHistory] = useState<PlanHistory[]>([]);
-  const [selectedHistoryPlan, setSelectedHistoryPlan] = useState<StudyPlan | null>(null);
+  const [selectedHistoryPlan, setSelectedHistoryPlan] =
+    useState<StudyPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
@@ -72,10 +74,10 @@ const StudyPlan: React.FC = () => {
 
   const fetchPlanHistory = useCallback(async () => {
     if (hasFetchedHistory) return;
-    
+
     setIsLoadingHistory(true);
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem("auth_token");
       const userResponse = await axios.get(`${apiUrl}/auth/user`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -88,7 +90,10 @@ const StudyPlan: React.FC = () => {
       setPlanHistory(response.data.plans || []);
       setHasFetchedHistory(true);
     } catch (err: any) {
-      console.error('Fetch Plan History Error:', err.response?.data || err.message);
+      console.error(
+        "Fetch Plan History Error:",
+        err.response?.data || err.message
+      );
     } finally {
       setIsLoadingHistory(false);
     }
@@ -100,28 +105,30 @@ const StudyPlan: React.FC = () => {
 
   const fetchPlanDetails = async (planId: string) => {
     try {
-      const token = localStorage.getItem('auth_token');
-      const response = await axios.get(
-        `${apiUrl}/study-plan/${planId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const token = localStorage.getItem("auth_token");
+      const response = await axios.get(`${apiUrl}/study-plan/${planId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setSelectedHistoryPlan(response.data.plan);
-      setPlan(null); 
+      setPlan(null);
     } catch (err: any) {
-      console.error('Fetch Plan Details Error:', err.response?.data || err.message);
-      setError('Failed to load plan details');
+      console.error(
+        "Fetch Plan Details Error:",
+        err.response?.data || err.message
+      );
+      setError("Failed to load plan details");
     }
   };
 
   const handleGeneratePlan = async () => {
     if (!subjects.length || !timeSlots.length || !startDate) {
-      setError('Please add subjects, time slots, and a valid start date');
+      setError("Please add subjects, time slots, and a valid start date");
       return;
     }
 
     setIsGenerating(true);
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem("auth_token");
       const userResponse = await axios.get(`${apiUrl}/auth/user`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -129,31 +136,31 @@ const StudyPlan: React.FC = () => {
 
       const response = await axios.post(
         `${apiUrl}/study-plan/generate`,
-        { 
-          userId, 
-          subjects, 
-          timeSlots: timeSlots.map(slot => slot.hours),
-          startDate: startDate 
+        {
+          userId,
+          subjects,
+          timeSlots: timeSlots.map((slot) => slot.hours),
+          startDate: startDate,
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
-      console.log('Study Plan Response:', response.data);
+
+      console.log("Study Plan Response:", response.data);
       setPlan(response.data.plan);
       setSelectedHistoryPlan(null);
       setError(null);
-      setHasFetchedHistory(false); 
+      setHasFetchedHistory(false);
       await fetchPlanHistory();
     } catch (err: any) {
-      console.error('Generate Plan Error:', err.response?.data || err.message);
-      setError('Failed to generate study plan');
+      console.error("Generate Plan Error:", err.response?.data || err.message);
+      setError("Failed to generate study plan");
     } finally {
       setIsGenerating(false);
     }
   };
 
   const handleAddSubject = () => {
-    setSubjects([...subjects, '']);
+    setSubjects([...subjects, ""]);
   };
 
   const handleUpdateSubject = (index: number, value: string) => {
@@ -182,34 +189,34 @@ const StudyPlan: React.FC = () => {
     const updatedTimeSlots = timeSlots.filter((_, i) => i !== index);
     const renumberedSlots = updatedTimeSlots.map((slot, idx) => ({
       ...slot,
-      day: idx + 1
+      day: idx + 1,
     }));
     setTimeSlots(renumberedSlots);
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     });
   };
 
   const planVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
-      y: 0, 
-      transition: { 
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
         duration: 0.5,
-        staggerChildren: 0.1
-      } 
+        staggerChildren: 0.1,
+      },
     },
   };
 
   const dayVariants: Variants = {
     hidden: { opacity: 0, scale: 0.9 },
-    visible: { opacity: 1, scale: 1 }
+    visible: { opacity: 1, scale: 1 },
   };
 
   const displayPlan = selectedHistoryPlan || plan;
@@ -218,7 +225,7 @@ const StudyPlan: React.FC = () => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
       className="w-full max-w-6xl mx-auto p-4 sm:p-6 bg-gray-50 dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 rounded-xl shadow-lg"
     >
       {/* Header */}
@@ -230,7 +237,8 @@ const StudyPlan: React.FC = () => {
           </h2>
         </div>
         <p className="text-gray-600 dark:text-gray-300 px-6 text-sm sm:text-base max-w-md mx-auto leading-relaxed">
-          Create your personalized study schedule. Add subjects and time slots to generate an optimal learning plan.
+          Create your personalized study schedule. Add subjects and time slots
+          to generate an optimal learning plan.
         </p>
       </div>
 
@@ -253,9 +261,11 @@ const StudyPlan: React.FC = () => {
         >
           <div className="flex items-center space-x-2 mb-4">
             <BookOpen className="w-5 h-5 text-green-600" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Study Subjects</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Study Subjects
+            </h3>
           </div>
-          
+
           <div className="space-y-3 mb-4">
             {subjects.map((subject, index) => (
               <motion.div
@@ -305,23 +315,25 @@ const StudyPlan: React.FC = () => {
         >
           <div className="flex items-center space-x-2 mb-4">
             <Clock className="w-5 h-5 text-orange-600" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Study Schedule</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Study Schedule
+            </h3>
           </div>
 
           {/* Start Date Input */}
           <div className="mb-6">
             <label className="flex items-center text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-              <CalendarDays className="w-4 h-4 mr-2"/>
+              <CalendarDays className="w-4 h-4 mr-2" />
               Plan Start Date
             </label>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              min={getLocalDateString(new Date())} 
+              min={getLocalDateString(new Date())}
               className=" w-full sm:w-auto px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-          </div>    
+          </div>
           <div className="space-y-3 mb-4">
             {timeSlots.map((slot, index) => (
               <motion.div
@@ -338,13 +350,20 @@ const StudyPlan: React.FC = () => {
                     <input
                       type="number"
                       value={slot.hours}
-                      onChange={(e) => handleUpdateTimeSlot(index, parseInt(e.target.value) || 0)}
+                      onChange={(e) =>
+                        handleUpdateTimeSlot(
+                          index,
+                          parseInt(e.target.value) || 0
+                        )
+                      }
                       min="1"
                       max="12"
                       className="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                       placeholder="Hours"
                     />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">hours</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      hours
+                    </span>
                   </div>
                 </div>
                 <motion.button
@@ -403,7 +422,9 @@ const StudyPlan: React.FC = () => {
         >
           <div className="flex items-center space-x-2 mb-4">
             <History className="w-5 h-5 text-purple-600" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Plans History</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Plans History
+            </h3>
           </div>
 
           {isLoadingHistory ? (
@@ -419,9 +440,9 @@ const StudyPlan: React.FC = () => {
                   whileTap={{ scale: 0.98 }}
                   onClick={() => fetchPlanDetails(historyPlan.id)}
                   className={`p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
-                    selectedHistoryPlan?.id === historyPlan.id 
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-                      : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                    selectedHistoryPlan?.id === historyPlan.id
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                      : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500"
                   }`}
                 >
                   <div className="flex items-center justify-between mb-2">
@@ -432,16 +453,19 @@ const StudyPlan: React.FC = () => {
                         </span>
                       </div>
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {historyPlan.schedule_count} Day{historyPlan.schedule_count !== 1 ? 's' : ''}
+                        {historyPlan.schedule_count} Day
+                        {historyPlan.schedule_count !== 1 ? "s" : ""}
                       </span>
                     </div>
                     <ChevronRight size={16} className="text-gray-400" />
                   </div>
-                  
+
                   <div className="space-y-1">
                     <p className="text-xs text-gray-600 dark:text-gray-400">
-                      {historyPlan.subjects?.slice(0, 2).join(', ') || 'No subjects'}
-                      {historyPlan.subjects?.length > 2 && ` +${historyPlan.subjects.length - 2} more`}
+                      {historyPlan.subjects?.slice(0, 2).join(", ") ||
+                        "No subjects"}
+                      {historyPlan.subjects?.length > 2 &&
+                        ` +${historyPlan.subjects.length - 2} more`}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-500">
                       {formatDate(historyPlan.created_at)}
@@ -464,13 +488,17 @@ const StudyPlan: React.FC = () => {
         >
           <div className="text-center mb-6">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-              {selectedHistoryPlan ? 'Selected Study Plan' : 'Your Personalized Study Plan'}
+              {selectedHistoryPlan
+                ? "Selected Study Plan"
+                : "Your Personalized Study Plan"}
             </h3>
             <p className="text-gray-600 dark:text-gray-300">
-              {selectedHistoryPlan ? 'Previously generated plan' : 'Optimized schedule for effective learning'}
+              {selectedHistoryPlan
+                ? "Previously generated plan"
+                : "Optimized schedule for effective learning"}
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {displayPlan.schedule.map((day, index) => (
               <motion.div
@@ -482,25 +510,36 @@ const StudyPlan: React.FC = () => {
                   <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
                     {day.day}
                   </div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white">Day {day.day}</h4>
+                  <h4 className="font-semibold text-gray-900 dark:text-white">
+                    Day {day.day}
+                  </h4>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2 text-sm">
                     <Clock size={14} className="text-gray-500" />
-                    <span className="text-gray-700 dark:text-gray-300">{day.time}</span>
+                    <span className="text-gray-700 dark:text-gray-300">
+                      {day.time}
+                    </span>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2 text-sm">
                     <BookOpen size={14} className="text-gray-500" />
-                    <span className="text-gray-700 dark:text-gray-300 font-medium">{day.subject}</span>
+                    <span className="text-gray-700 dark:text-gray-300 font-medium">
+                      {day.subject}
+                    </span>
                   </div>
-                  
+
                   <div className="mt-3">
-                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">TASKS:</p>
+                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                      TASKS:
+                    </p>
                     <ul className="space-y-1">
                       {day.tasks.map((task, taskIndex) => (
-                        <li key={taskIndex} className="text-sm text-gray-700 dark:text-gray-300 flex items-start space-x-2">
+                        <li
+                          key={taskIndex}
+                          className="text-sm text-gray-700 dark:text-gray-300 flex items-start space-x-2"
+                        >
                           <span className="text-blue-500 mt-1">•</span>
                           <span>{task}</span>
                         </li>

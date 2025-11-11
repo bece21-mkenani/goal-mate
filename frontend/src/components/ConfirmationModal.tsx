@@ -1,6 +1,6 @@
-import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, Loader2 } from 'lucide-react';
+import React from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { AlertTriangle, Loader2 } from "lucide-react";
 
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -10,7 +10,7 @@ interface ConfirmationModalProps {
   message: string;
   confirmText?: string;
   cancelText?: string;
-  isConfirming?: boolean; // To show a loading spinner
+  isConfirming?: boolean;
 }
 
 const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
@@ -19,8 +19,8 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   onConfirm,
   title,
   message,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
+  confirmText = "Confirm",
+  cancelText = "Cancel",
   isConfirming = false,
 }) => {
   return (
@@ -32,7 +32,6 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          {/* Backdrop */}
           <motion.div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             initial={{ opacity: 0 }}
@@ -40,8 +39,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             exit={{ opacity: 0 }}
             onClick={onClose}
           />
-          
-          {/* Modal Panel */}
+
           <motion.div
             className="relative w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700"
             initial={{ scale: 0.9, opacity: 0 }}
@@ -52,17 +50,21 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             aria-labelledby="modal-title"
           >
             <div className="flex items-center flex-col">
-              {/* Icon */}
               <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30 sm:mx-0 sm:h-10 sm:w-10">
-                <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" aria-hidden="true" />
+                <AlertTriangle
+                  className="h-6 w-6 text-red-600 dark:text-red-400"
+                  aria-hidden="true"
+                />
               </div>
-              
+
               <div className="ml-4 text-left">
-                {/* Title */}
-                <h3 className="text-lg font-bold leading-6 text-gray-900 dark:text-white" id="modal-title">
+                <h3
+                  className="text-lg font-bold leading-6 text-gray-900 dark:text-white"
+                  id="modal-title"
+                >
                   {title}
                 </h3>
-                {/* Message */}
+
                 <div className="mt-2">
                   <p className="text-sm text-gray-600 dark:text-gray-300">
                     {message}
@@ -71,7 +73,6 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
               </div>
             </div>
 
-            {/* Buttons */}
             <div className="mt-6 flex flex-row-reverse gap-3">
               <motion.button
                 type="button"

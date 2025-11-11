@@ -1,22 +1,25 @@
-// ==========================
-// File: GroupChat.tsx
-// ==========================
-
-import axios from 'axios';
-import { AnimatePresence, motion } from 'framer-motion';
+import axios from "axios";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  AlertTriangle, ArrowLeft, Loader2, LogOut, Send,
-  MessageSquare, Paperclip, Smile, CheckCheck,
-  Menu, Lock 
-} from 'lucide-react';
-import React, { useContext, useEffect, useRef, useState } from 'react';
-import { ThemeContext } from '../App';
-import { useSocket } from '../contexts/SocketContext';
-import ConfirmationModal from './ConfirmationModal';
+  AlertTriangle,
+  ArrowLeft,
+  Loader2,
+  LogOut,
+  Send,
+  MessageSquare,
+  Paperclip,
+  Smile,
+  CheckCheck,
+  Menu,
+  Lock,
+} from "lucide-react";
+import React, { useContext, useEffect, useRef, useState } from "react";
+import { ThemeContext } from "../App";
+import { useSocket } from "../contexts/SocketContext";
+import ConfirmationModal from "./ConfirmationModal";
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3036';
+const apiUrl = import.meta.env.VITE_API_URL!;
 
-// --- Interfaces ---
 interface ChatMessage {
   id: bigint;
   content: string;
@@ -40,7 +43,7 @@ interface GroupRoom {
   id: string;
   group_id: string;
   room_name: string;
-  education_level: 'primary' | 'secondary' | 'tertiary' | null;
+  education_level: "primary" | "secondary" | "tertiary" | null;
 }
 interface TypingUser {
   userId: string;
@@ -62,16 +65,40 @@ interface CurrentUser {
   education_level: string | null;
 }
 
-// --- EmojiPicker component ---
-const EmojiPicker: React.FC<{ onEmojiSelect: (emoji: string) => void }> = ({ onEmojiSelect }) => {
+/*=== EMOJI COMPONENT ===*/
+const EmojiPicker: React.FC<{ onEmojiSelect: (emoji: string) => void }> = ({
+  onEmojiSelect,
+}) => {
   const emojis = [
-    '👍', '❤️', '😂', '😮', '😢', '🙏', '🔥', '👏', '😍', '😊',
-    '🎉', '🤔', '🌟', '📚', '📖', '🎓', '✏️', '🙌', '👎', '🥳', '🤗', '😇', '🥺'
+    "👍",
+    "❤️",
+    "😂",
+    "😮",
+    "😢",
+    "🙏",
+    "🔥",
+    "👏",
+    "😍",
+    "😊",
+    "🎉",
+    "🤔",
+    "🌟",
+    "📚",
+    "📖",
+    "🎓",
+    "✏️",
+    "🙌",
+    "👎",
+    "🥳",
+    "🤗",
+    "😇",
+    "🥺",
   ];
+
   return (
     <div className="absolute bottom-16 -left-10 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-4 z-20 max-w-md transition-all">
       <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-9 lg:grid-cols-10 gap-1 justify-items-center">
-        {emojis.map(emoji => (
+        {emojis.map((emoji) => (
           <button
             key={emoji}
             onClick={() => onEmojiSelect(emoji)}
@@ -85,7 +112,7 @@ const EmojiPicker: React.FC<{ onEmojiSelect: (emoji: string) => void }> = ({ onE
   );
 };
 
-// --- Sidebar Sub-Component ---
+/*=== SIDE BAR ADMIN COMPONENT ===*/
 const AdminSidebarContent: React.FC<{
   groupDetails: GroupDetails | null;
   roomList: GroupRoom[];
@@ -93,7 +120,14 @@ const AdminSidebarContent: React.FC<{
   onlineUsers: OnlineUser[];
   currentUser: CurrentUser;
   onSwitchRoom: (room: GroupRoom) => void;
-}> = ({ groupDetails, roomList, currentRoom, onlineUsers, currentUser, onSwitchRoom }) => {
+}> = ({
+  groupDetails,
+  roomList,
+  currentRoom,
+  onlineUsers,
+  currentUser,
+  onSwitchRoom,
+}) => {
   return (
     <div className="w-64 flex-shrink-0 bg-gray-50 dark:bg-gray-900 flex flex-col h-full">
       {/* Header */}
@@ -103,33 +137,38 @@ const AdminSidebarContent: React.FC<{
         </h2>
       </div>
 
-      {/* Room List (NOW WITH SECURITY) */}
+      {/* Room List Wwith security */}
       <div className="p-4 space-y-2 flex-1 overflow-y-auto">
         <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
           Rooms
         </h3>
         {roomList.map((room) => {
-          const isEducationRoom = ['primary', 'secondary', 'tertiary'].includes(room.room_name);
-          
-          // --- FIX: Correctly use isEducationRoom variable ---
-          const isAllowed = 
-            currentUser.is_admin || // Admins can join any room
-            !isEducationRoom || // Everyone can join non-education rooms (like 'general')
-            room.room_name === currentUser.education_level; // User can join their matching level
+          const isEducationRoom = ["primary", "secondary", "tertiary"].includes(
+            room.room_name
+          );
+          const isAllowed =
+            currentUser.is_admin ||
+            !isEducationRoom ||
+            room.room_name === currentUser.education_level;
 
           return (
             <button
               key={room.id}
-              onClick={() => isAllowed ? onSwitchRoom(room) : null}
+              onClick={() => (isAllowed ? onSwitchRoom(room) : null)}
               disabled={!isAllowed}
-              title={!isAllowed ? "You don't have permission for this room" : `Join ${room.room_name} room`}
+              title={
+                !isAllowed
+                  ? "You don't have permission for this room"
+                  : `Join ${room.room_name} room`
+              }
               className={`
                 w-full text-left p-3 rounded-lg flex items-center justify-between gap-3 transition-colors
-                ${currentRoom === room.room_name
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                ${
+                  currentRoom === room.room_name
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
                 }
-                ${!isAllowed ? 'opacity-50 cursor-not-allowed' : ''}
+                ${!isAllowed ? "opacity-50 cursor-not-allowed" : ""}
               `}
             >
               <div className="flex items-center gap-3">
@@ -156,13 +195,16 @@ const AdminSidebarContent: React.FC<{
             </span>
           )}
           {onlineUsers.map((user) => (
-            <div key={user.id} className="flex items-center gap-3 p-2 rounded-lg">
+            <div
+              key={user.id}
+              className="flex items-center gap-3 p-2 rounded-lg"
+            >
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white font-semibold text-xs">
                 {user.name.substring(0, 2).toUpperCase()}
               </div>
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
                 {user.name}
-                {user.id === currentUser.id && ' (You)'}
+                {user.id === currentUser.id && " (You)"}
               </span>
             </div>
           ))}
@@ -172,21 +214,18 @@ const AdminSidebarContent: React.FC<{
   );
 };
 
-
-// --- Main GroupChat Component ---
 const GroupChat: React.FC<GroupChatProps> = ({ groupId, roomName, onBack }) => {
   useContext(ThemeContext);
   const { socket, isConnected } = useSocket();
 
   const [groupDetails, setGroupDetails] = useState<GroupDetails | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  // --- FIX: Removed the old 'currentUserId' state ---
   const [currentUser, setCurrentUser] = useState<CurrentUser>({
     id: null,
     is_admin: false,
-    education_level: null
+    education_level: null,
   });
-  const [newMessage, setNewMessage] = useState('');
+  const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
@@ -198,31 +237,34 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, roomName, onBack }) => {
   const [currentRoom, setCurrentRoom] = useState(roomName);
   const [roomList, setRoomList] = useState<GroupRoom[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [readReceipts, setReadReceipts] = useState<Record<string, Set<string>>>({});
+  const [readReceipts, setReadReceipts] = useState<Record<string, Set<string>>>(
+    {}
+  );
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // --- Load Chat Room ---
   useEffect(() => {
     const loadChatRoom = async () => {
       setIsLoading(true);
       try {
-        const token = localStorage.getItem('auth_token');
-        if (!token) throw new Error('No auth token');
+        const token = localStorage.getItem("auth_token");
+        if (!token) throw new Error("No auth token");
         const headers = { Authorization: `Bearer ${token}` };
 
         const [userRes, groupRes] = await Promise.all([
           axios.get(`${apiUrl}/auth/user`, { headers }),
-          axios.get(`${apiUrl}/groups/${groupId}`, { headers })
+          axios.get(`${apiUrl}/groups/${groupId}`, { headers }),
         ]);
 
         const user = userRes.data.user;
         const group = groupRes.data.group;
-        
+
         setCurrentUser({
           id: user.id,
           is_admin: user.is_admin,
-          education_level: user.education_level
+          education_level: user.education_level,
         });
 
         setGroupDetails(group);
@@ -232,20 +274,26 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, roomName, onBack }) => {
         setCurrentRoom(initialRoom);
 
         if (group.is_admin_group) {
-          const roomsRes = await axios.get(`${apiUrl}/groups/${groupId}/rooms`, { headers });
+          const roomsRes = await axios.get(
+            `${apiUrl}/groups/${groupId}/rooms`,
+            { headers }
+          );
           setRoomList(roomsRes.data.rooms || []);
         }
 
-        const historyRes = await axios.get(`${apiUrl}/groups/${groupId}/messages`, {
-          headers,
-          params: { roomName: initialRoom }
-        });
+        const historyRes = await axios.get(
+          `${apiUrl}/groups/${groupId}/messages`,
+          {
+            headers,
+            params: { roomName: initialRoom },
+          }
+        );
 
         setMessages(historyRes.data.messages || []);
         setError(null);
       } catch (err: any) {
-        console.error('Failed to load chat room:', err.message);
-        setError('Could not load this group. You may not be a member.');
+        console.error("Failed to load chat room:", err.message);
+        setError("Could not load this group. You may not be a member.");
       } finally {
         setIsLoading(false);
       }
@@ -254,31 +302,42 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, roomName, onBack }) => {
     loadChatRoom();
   }, [groupId, roomName]);
 
-  // --- Socket.io listeners ---
   useEffect(() => {
     if (!socket || !isConnected || !groupDetails) return;
 
     console.log(`Socket emitting 'join_room': ${groupId}-${currentRoom}`);
-    socket.emit('join_room', { groupId, roomName: currentRoom });
+    socket.emit("join_room", { groupId, roomName: currentRoom });
 
     const handleReceiveMessage = (incoming: ChatMessage) => {
       if (incoming.room_name === currentRoom) {
-        setMessages(prevMessages => [...prevMessages, incoming]);
+        setMessages((prevMessages) => [...prevMessages, incoming]);
       }
     };
     const handleUserTyping = (user: TypingUser) => {
-      setTypingUsers(prev => (prev.find(u => u.userId === user.userId) ? prev : [...prev, user]));
+      setTypingUsers((prev) =>
+        prev.find((u) => u.userId === user.userId) ? prev : [...prev, user]
+      );
     };
     const handleUserStopTyping = (user: { userId: string }) => {
-      setTypingUsers(prev => prev.filter(u => u.userId !== user.userId));
+      setTypingUsers((prev) => prev.filter((u) => u.userId !== user.userId));
     };
-    const handleReactionUpdate = (updatedMessage: { id: bigint; reactions: any }) => {
-      setMessages(prev => prev.map(msg =>
-        msg.id === updatedMessage.id ? { ...msg, reactions: updatedMessage.reactions } : msg
-      ));
+    const handleReactionUpdate = (updatedMessage: {
+      id: bigint;
+      reactions: any;
+    }) => {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === updatedMessage.id
+            ? { ...msg, reactions: updatedMessage.reactions }
+            : msg
+        )
+      );
     };
-    const handleReadReceipt = (receipt: { messageId: bigint; userId: string }) => {
-      setReadReceipts(prev => {
+    const handleReadReceipt = (receipt: {
+      messageId: bigint;
+      userId: string;
+    }) => {
+      setReadReceipts((prev) => {
         const newReceipts = { ...prev };
         const key = receipt.messageId.toString();
         if (!newReceipts[key]) newReceipts[key] = new Set();
@@ -290,85 +349,82 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, roomName, onBack }) => {
       setOnlineUsers(users);
     };
 
-    socket.on('receive_message', handleReceiveMessage);
-    socket.on('user_typing_start', handleUserTyping);
-    socket.on('user_typing_stop', handleUserStopTyping);
-    socket.on('reaction_update', handleReactionUpdate);
-    socket.on('read_receipt_update', handleReadReceipt);
-    socket.on('online_users_update', handleOnlineUsers);
+    socket.on("receive_message", handleReceiveMessage);
+    socket.on("user_typing_start", handleUserTyping);
+    socket.on("user_typing_stop", handleUserStopTyping);
+    socket.on("reaction_update", handleReactionUpdate);
+    socket.on("read_receipt_update", handleReadReceipt);
+    socket.on("online_users_update", handleOnlineUsers);
 
     return () => {
       console.log(`Socket emitting 'leave_room': ${groupId}-${currentRoom}`);
-      socket.emit('leave_room', { groupId, roomName: currentRoom });
-      socket.off('receive_message', handleReceiveMessage);
-      socket.off('user_typing_start', handleUserTyping);
-      socket.off('user_typing_stop', handleUserStopTyping);
-      socket.off('reaction_update', handleReactionUpdate);
-      socket.off('read_receipt_update', handleReadReceipt);
-      socket.off('online_users_update', handleOnlineUsers);
+      socket.emit("leave_room", { groupId, roomName: currentRoom });
+      socket.off("receive_message", handleReceiveMessage);
+      socket.off("user_typing_start", handleUserTyping);
+      socket.off("user_typing_stop", handleUserStopTyping);
+      socket.off("reaction_update", handleReactionUpdate);
+      socket.off("read_receipt_update", handleReadReceipt);
+      socket.off("online_users_update", handleOnlineUsers);
     };
   }, [socket, isConnected, groupId, currentRoom, groupDetails]);
 
-  // --- Auto-scroll ---
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typingUsers]);
 
-  // --- Handle Leave Group ---
   const handleLeaveGroup = () => setShowLeaveModal(true);
   const executeLeave = async () => {
     setIsLeaving(true);
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem("auth_token");
       await axios.delete(`${apiUrl}/groups/${groupId}/leave`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       setShowLeaveModal(false);
       onBack();
     } catch (err: any) {
-      console.error('Failed to leave group:', err.message);
-      setError(err.response?.data?.error || 'Failed to leave group. Please try again.');
+      console.error("Failed to leave group:", err.message);
+      setError(
+        err.response?.data?.error || "Failed to leave group. Please try again."
+      );
       setShowLeaveModal(false);
     } finally {
       setIsLeaving(false);
     }
   };
 
-  // --- Handle Send Message ---
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !socket || !isConnected) return;
-    socket.emit('send_message', {
+    socket.emit("send_message", {
       groupId,
       roomName: currentRoom,
       content: newMessage,
-      fileUrl: null
+      fileUrl: null,
     });
-    socket.emit('typing_stop', { groupId, roomName: currentRoom });
+    socket.emit("typing_stop", { groupId, roomName: currentRoom });
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
       typingTimeoutRef.current = null;
     }
-    setNewMessage('');
+    setNewMessage("");
     setShowEmojiPicker(false);
   };
 
-  // --- Handle Typing ---
   const handleTypingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewMessage(e.target.value);
     if (!socket || !isConnected) return;
     if (!typingTimeoutRef.current) {
-      socket.emit('typing_start', { groupId, roomName: currentRoom });
+      socket.emit("typing_start", { groupId, roomName: currentRoom });
     } else {
       clearTimeout(typingTimeoutRef.current);
     }
     typingTimeoutRef.current = setTimeout(() => {
-      socket.emit('typing_stop', { groupId, roomName: currentRoom });
+      socket.emit("typing_stop", { groupId, roomName: currentRoom });
       typingTimeoutRef.current = null;
     }, 2000);
   };
 
-  // --- switchRoom ---
   const switchRoom = async (room: GroupRoom) => {
     if (room.room_name === currentRoom) return;
     setIsMobileSidebarOpen(false);
@@ -378,43 +434,89 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, roomName, onBack }) => {
     setOnlineUsers([]);
     setCurrentRoom(room.room_name);
     try {
-      const token = localStorage.getItem('auth_token');
-      const historyRes = await axios.get(`${apiUrl}/groups/${groupId}/messages`, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { roomName: room.room_name }
-      });
+      const token = localStorage.getItem("auth_token");
+      const historyRes = await axios.get(
+        `${apiUrl}/groups/${groupId}/messages`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { roomName: room.room_name },
+        }
+      );
       setMessages(historyRes.data.messages || []);
       setError(null);
     } catch (err) {
-      setError('Failed to load messages for this room.');
+      setError("Failed to load messages for this room.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // --- Add Reaction ---
   const handleAddReaction = (messageId: bigint, emoji: string) => {
     if (!socket || !isConnected) return;
-    socket.emit('add_reaction', {
+    socket.emit("add_reaction", {
       messageId,
       emoji,
       groupId,
-      roomName: currentRoom
+      roomName: currentRoom,
     });
   };
 
-  // --- File Upload ---
   const handleFileUploadClick = () => {
-    console.log('File upload not implemented yet.');
+    if (isUploading) return;
+    fileInputRef.current?.click();
   };
 
-  // --- Emoji Select ---
+  const handleFileSelected = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const token = localStorage.getItem("auth_token");
+      const res = await axios.post(`${apiUrl}/api/upload`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const publicUrl = res.data.url;
+
+      if (socket && isConnected) {
+        socket.emit("send_message", {
+          groupId,
+          roomName: currentRoom,
+          content: newMessage || "",
+          fileUrl: publicUrl,
+        });
+      }
+    } catch (err: any) {
+      console.error("File upload failed:", err);
+
+      setError(
+        "File upload failed. The file might be too large (10MB limit) or an unsupported type."
+      );
+
+      setTimeout(() => setError(null), 5000);
+    } finally {
+      setIsUploading(false);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
   const handleEmojiSelect = (emoji: string) => {
-    setNewMessage(prev => prev + emoji);
+    setNewMessage((prev) => prev + emoji);
     setShowEmojiPicker(false);
   };
 
-  // --- Loading/Error renders ---
   if (isLoading && !groupDetails) {
     return (
       <div className="flex justify-center items-center h-[80vh]">
@@ -426,8 +528,12 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, roomName, onBack }) => {
     return (
       <div className="flex flex-col items-center justify-center h-[80vh] p-4">
         <AlertTriangle className="w-12 h-12 text-red-500" />
-        <h3 className="text-xl font-semibold text-red-700 dark:text-red-300 mt-4">Error</h3>
-        <p className="text-gray-600 dark:text-gray-400 mt-2 text-center">{error}</p>
+        <h3 className="text-xl font-semibold text-red-700 dark:text-red-300 mt-4">
+          Error
+        </h3>
+        <p className="text-gray-600 dark:text-gray-400 mt-2 text-center">
+          {error}
+        </p>
         <button
           onClick={onBack}
           className="mt-6 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md"
@@ -438,9 +544,6 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, roomName, onBack }) => {
     );
   }
 
-  // ============================================================
-  // ===               RENDER: USER-CREATED GROUP             ===
-  // ============================================================
   if (!isAdminGroup) {
     return (
       <>
@@ -462,10 +565,10 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, roomName, onBack }) => {
               </motion.button>
               <div className="ml-4">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                  {groupDetails?.name || 'Chat'}
+                  {groupDetails?.name || "Chat"}
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 mt-1 line-clamp-1">
-                  {groupDetails?.description || 'Group chat'}
+                  {groupDetails?.description || "Group chat"}
                 </p>
               </div>
             </div>
@@ -484,7 +587,9 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, roomName, onBack }) => {
             {error && (
               <div className="flex flex-col items-center justify-center p-4">
                 <AlertTriangle className="w-8 h-8 text-red-500" />
-                <p className="text-gray-600 dark:text-gray-400 mt-2 text-center">{error}</p>
+                <p className="text-gray-600 dark:text-gray-400 mt-2 text-center">
+                  {error}
+                </p>
               </div>
             )}
             {messages.map((msg) => {
@@ -492,21 +597,23 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, roomName, onBack }) => {
               return (
                 <motion.div
                   key={msg.id.toString()}
-                  className={`flex flex-col ${isSender ? 'items-end' : 'items-start'}`}
+                  className={`flex flex-col ${
+                    isSender ? "items-end" : "items-start"
+                  }`}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
                 >
                   {!isSender && (
                     <span className="text-xs text-gray-500 dark:text-gray-400 ml-2 mb-1">
-                      {msg.users?.name || 'User'}
+                      {msg.users?.name || "User"}
                     </span>
                   )}
                   <div
                     className={`max-w-xs md:max-w-md p-3 rounded-lg ${
                       isSender
-                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                        ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
+                        : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
                     }`}
                   >
                     <p>{msg.content}</p>
@@ -529,8 +636,8 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, roomName, onBack }) => {
                   exit={{ opacity: 0, y: 5 }}
                   className="text-sm text-gray-500 dark:text-gray-400 italic"
                 >
-                  {typingUsers.map(u => u.name).join(', ')}
-                  {typingUsers.length === 1 ? ' is' : ' are'} typing...
+                  {typingUsers.map((u) => u.name).join(", ")}
+                  {typingUsers.length === 1 ? " is" : " are"} typing...
                 </motion.div>
               )}
             </AnimatePresence>
@@ -572,12 +679,9 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, roomName, onBack }) => {
     );
   }
 
-  // ============================================================
-  // ===               RENDER: ADMIN GROUP                   ===
-  // ============================================================
   return (
     <>
-      {/* --- Mobile Sidebar (Slide-in) --- */}
+      {/* --- Mobile Sidebar --- */}
       <AnimatePresence>
         {isMobileSidebarOpen && (
           <>
@@ -589,13 +693,13 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, roomName, onBack }) => {
               onClick={() => setIsMobileSidebarOpen(false)}
             />
             <motion.div
-              initial={{ x: '-100%' }}
+              initial={{ x: "-100%" }}
               animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              exit={{ x: "-100%" }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
               className="fixed top-0 left-0 h-full w-64 bg-white dark:bg-gray-800 z-40"
             >
-              <AdminSidebarContent 
+              <AdminSidebarContent
                 groupDetails={groupDetails}
                 roomList={roomList}
                 currentRoom={currentRoom}
@@ -616,7 +720,7 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, roomName, onBack }) => {
       >
         {/* --- Desktop Sidebar --- */}
         <div className="hidden lg:flex rounded-l-xl overflow-hidden border-r border-gray-200 dark:border-gray-700">
-          <AdminSidebarContent 
+          <AdminSidebarContent
             groupDetails={groupDetails}
             roomList={roomList}
             currentRoom={currentRoom}
@@ -651,15 +755,15 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, roomName, onBack }) => {
               </motion.button>
 
               <div className="ml-4">
-              {currentRoom === 'general' ? (
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white capitalize">
-                  {currentRoom} Group
-                </h2>
-              ) : (
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white capitalize">
-                  {currentRoom} Group
-                </h2>
-              )}
+                {currentRoom === "general" ? (
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white capitalize">
+                    {currentRoom} Group
+                  </h2>
+                ) : (
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white capitalize">
+                    {currentRoom} Group
+                  </h2>
+                )}
                 <p className="text-gray-600 dark:text-gray-400 mt-1 line-clamp-1">
                   {groupDetails?.description}
                 </p>
@@ -685,7 +789,9 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, roomName, onBack }) => {
             {error && (
               <div className="flex flex-col items-center justify-center p-4">
                 <AlertTriangle className="w-8 h-8 text-red-500" />
-                <p className="text-gray-600 dark:text-gray-400 mt-2 text-center">{error}</p>
+                <p className="text-gray-600 dark:text-gray-400 mt-2 text-center">
+                  {error}
+                </p>
               </div>
             )}
             {messages.map((msg) => {
@@ -693,43 +799,76 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, roomName, onBack }) => {
               return (
                 <motion.div
                   key={msg.id.toString()}
-                  className={`flex flex-col group ${isSender ? 'items-end' : 'items-start'}`}
+                  className={`flex flex-col group ${
+                    isSender ? "items-end" : "items-start"
+                  }`}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
                 >
                   {!isSender && (
                     <span className="text-xs text-gray-500 dark:text-gray-400 ml-2 mb-1">
-                      {msg.users?.name || 'User'}
+                      {msg.users?.name || "User"}
                     </span>
                   )}
                   <div
-                    className={`max-w-xs md:max-w-lg p-3 rounded-2xl relative ${
+                    className={`max-w-xs md:max-w-lg rounded-2xl relative ${
                       isSender
-                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-br-none'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none'
-                    }`}
+                        ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-br-none"
+                        : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none"
+                    } ${msg.file_url && !msg.content ? "p-0" : "p-3"}`} // No padding if it's just a file
                   >
-                    <p className="break-words">{msg.content}</p>
+                    {/*===== file message ====*/}
+                    {msg.file_url ? (
+                      <div className="p-2">
+                        {/\.(jpe?g|png|gif|webp)$/i.test(msg.file_url) ? (
+                          <img
+                            src={msg.file_url}
+                            alt="Uploaded content"
+                            className="rounded-lg max-w-full h-auto"
+                          />
+                        ) : (
+                          <a
+                            href={msg.file_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 p-3 bg-gray-200 dark:bg-gray-800 rounded-lg"
+                          >
+                            <Paperclip className="w-5 h-5 flex-shrink-0" />
+                            <span className="truncate font-medium underline">
+                              {msg.file_url.split("/").pop()?.substring(14) ||
+                                "Download File"}
+                            </span>
+                          </a>
+                        )}
+                        {/* Render content if it exists WITH the file */}
+                        {msg.content && (
+                          <p className="break-words pt-2">{msg.content}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="break-words">{msg.content}</p>
+                    )}
 
                     {/* Reactions */}
                     {msg.reactions && Object.keys(msg.reactions).length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
-                        {Object.entries(msg.reactions).map(([emoji, userIds]) =>
-                          userIds.length > 0 && (
-                            <span
-                              key={emoji}
-                              className="text-xs bg-black bg-opacity-10 dark:bg-white dark:bg-opacity-20 px-2 py-1 rounded-full cursor-pointer"
-                              onClick={() => handleAddReaction(msg.id, emoji)}
-                            >
-                              {emoji} {userIds.length}
-                            </span>
-                          )
+                        {Object.entries(msg.reactions).map(
+                          ([emoji, userIds]) =>
+                            userIds.length > 0 && (
+                              <span
+                                key={emoji}
+                                className="text-xs bg-black bg-opacity-10 dark:bg-white dark:bg-opacity-20 px-2 py-1 rounded-full cursor-pointer"
+                                onClick={() => handleAddReaction(msg.id, emoji)}
+                              >
+                                {emoji} {userIds.length}
+                              </span>
+                            )
                         )}
                       </div>
                     )}
                     <button
-                      onClick={() => handleAddReaction(msg.id, '👍')}
+                      onClick={() => handleAddReaction(msg.id, "👍")}
                       className="absolute -bottom-3 -right-3 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-900 border dark:border-gray-700 rounded-full p-1 shadow-md transition-all"
                     >
                       <Smile className="w-4 h-4 text-gray-600 dark:text-gray-300" />
@@ -737,14 +876,20 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, roomName, onBack }) => {
                   </div>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs text-gray-400 dark:text-gray-500">
-                      {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(msg.created_at).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </span>
                     {isSender && (
-                      <CheckCheck className={`w-4 h-4 ${
-                        readReceipts[msg.id.toString()] && readReceipts[msg.id.toString()].size > 0
-                          ? 'text-blue-500' // Read
-                          : 'text-gray-400' // Sent
-                      }`} />
+                      <CheckCheck
+                        className={`w-4 h-4 ${
+                          readReceipts[msg.id.toString()] &&
+                          readReceipts[msg.id.toString()].size > 0
+                            ? "text-blue-500"
+                            : "text-gray-400"
+                        }`}
+                      />
                     )}
                   </div>
                 </motion.div>
@@ -758,11 +903,13 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, roomName, onBack }) => {
             <AnimatePresence>
               {typingUsers.length > 0 && (
                 <motion.div
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
                   className="text-sm text-gray-500 dark:text-gray-400 italic"
                 >
-                  {typingUsers.map(u => u.name).join(', ')}
-                  {typingUsers.length === 1 ? ' is' : ' are'} typing...
+                  {typingUsers.map((u) => u.name).join(", ")}
+                  {typingUsers.length === 1 ? " is" : " are"} typing...
                 </motion.div>
               )}
             </AnimatePresence>
@@ -773,12 +920,26 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, roomName, onBack }) => {
             onSubmit={handleSendMessage}
             className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700 flex items-center gap-2"
           >
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelected}
+              className="hidden"
+              accept="image/png, image/jpeg, image/gif, application/pdf, text/plain" // Optional: restrict file types
+            />
+
+            {/* paperclip button */}
             <button
               type="button"
               onClick={handleFileUploadClick}
-              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
+              disabled={isUploading}
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 disabled:opacity-50"
             >
-              <Paperclip className="w-5 h-5" />
+              {isUploading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Paperclip className="w-5 h-5" />
+              )}
             </button>
             <div className="relative flex-1">
               <input
@@ -795,7 +956,9 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, roomName, onBack }) => {
               >
                 <Smile className="w-5 h-5" />
               </button>
-              {showEmojiPicker && <EmojiPicker onEmojiSelect={handleEmojiSelect} />}
+              {showEmojiPicker && (
+                <EmojiPicker onEmojiSelect={handleEmojiSelect} />
+              )}
             </div>
             <motion.button
               type="submit"
@@ -816,7 +979,11 @@ const GroupChat: React.FC<GroupChatProps> = ({ groupId, roomName, onBack }) => {
         onConfirm={isAdminGroup ? () => setShowLeaveModal(false) : executeLeave}
         isConfirming={isLeaving}
         title={`Leave "${groupDetails?.name}"?`}
-        message={isAdminGroup ? "You cannot leave the admin group." : "Are you sure you want to leave this group? You will have to re-join to see messages again."}
+        message={
+          isAdminGroup
+            ? "You cannot leave the admin group."
+            : "Are you sure you want to leave this group? You will have to re-join to see messages again."
+        }
         confirmText={isAdminGroup ? "OK" : "Exit"}
       />
     </>

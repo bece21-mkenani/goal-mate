@@ -17,9 +17,8 @@ import {
 } from 'recharts';
 import { ThemeContext } from '../App';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3036';
+const apiUrl = import.meta.env.VITE_API_URL!;
 
-// Data structure from our SQL functions
 interface SubjectData {
   subject: string;
   total_minutes: number;
@@ -30,16 +29,16 @@ interface TimeData {
   total_minutes: number;
 }
 
-// Colors for the pie chart
+
 const PIE_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82ca9d', '#d0ed57', '#a4de6c', '#8dd1e1'];
 
-// Custom label for the pie chart (shows percentage)
+/*=== GLOBAL PIE LABLES ===*/
 const RADIAN = Math.PI / 180;
 const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
-  if (percent < 0.05) return null; // Don't render tiny labels
+  if (percent < 0.05) return null; 
   return (
     <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central">
       {`${(percent * 100).toFixed(0)}%`}
@@ -60,8 +59,6 @@ const AdvancedAnalytics: React.FC = () => {
         setIsLoading(true);
         setError(null);
         const token = localStorage.getItem('auth_token');
-
-        // Fetch both data points concurrently
         const [subjectRes, timeRes] = await Promise.all([
           axios.get(`${apiUrl}/analytics/subject-breakdown`, {
             headers: { Authorization: `Bearer ${token}` },
@@ -103,7 +100,6 @@ const labelStyle = {
       transition={{ duration: 0.5, ease: 'easeOut' }}
       className="w-full max-w-7xl mx-auto"
     >
-      {/* Header */}
       <div className="text-center mb-10">
         <div className="flex items-center justify-center gap-3 mb-4">
           <BarChart3 className="w-9 h-9 text-blue-600 dark:text-blue-400" />
@@ -115,8 +111,6 @@ const labelStyle = {
           Visualize your study habits and track your progress over time.
         </p>
       </div>
-
-      {/* Loading and Error States */}
       {isLoading && (
         <div className="flex justify-center items-center min-h-64">
           <Loader2 size={32} className="animate-spin text-blue-600" />
@@ -130,7 +124,6 @@ const labelStyle = {
         </div>
       )}
 
-      {/* No Data State */}
       {!isLoading && !error && !hasData && (
         <div className="flex flex-col justify-center items-center min-h-64 p-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
           <PieIcon className="w-12 h-12 text-gray-400" />
@@ -141,11 +134,9 @@ const labelStyle = {
         </div>
       )}
 
-      {/* Charts Grid */}
       {!isLoading && !error && hasData && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {/* Weekly Activity Bar Chart */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -176,7 +167,6 @@ const labelStyle = {
             </div>
           </motion.div>
 
-          {/* Subject Breakdown Pie Chart */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

@@ -1,4 +1,4 @@
-// components/ProjectDocumentation.tsx
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Download, FileText, CheckCircle, Clock, Zap, Users, BarChart3, Brain } from 'lucide-react';
@@ -15,7 +15,7 @@ const ProjectDocumentation: React.FC = () => {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>StudyBuddy Project Documentation</title>
+        <title>Goal Mate Project Documentation</title>
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
           

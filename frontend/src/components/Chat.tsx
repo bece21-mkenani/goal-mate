@@ -5,9 +5,11 @@ import { motion, type Variants } from 'framer-motion';
 import { Send, Loader2, Bot, User } from 'lucide-react';
 import { ThemeContext } from '../App';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3036';
-const supabaseUrl = 'https://tfdghduqsaniszkvzyhl.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZGdoZHVxc2FuaXN6a3Z6eWhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMzIwMTcsImV4cCI6MjA3NDcwODAxN30.8ga6eiQymTcO3OZLGDe3WuAHkWcxgRA9ywG3xJ6QzNI';
+
+const apiUrl = import.meta.env.VITE_API_URL!;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL!;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY!;
+
 
 const Chat: React.FC = () => {
   useContext(ThemeContext);
@@ -202,8 +204,6 @@ const Chat: React.FC = () => {
     try {
       const token = localStorage.getItem('auth_token');
       console.log('Sending to AI:', { userId, message: userMessage });
-      
-      // Add user message immediately to the chat
       const tempUserMessage: Message = {
         id: `temp-${Date.now()}`,
         user_id: userId,
@@ -222,7 +222,7 @@ const Chat: React.FC = () => {
       
       console.log('AI Response:', aiResponse.data);
       
-      // Add a temporary AI thinking message
+      /*=== THINKING MESSAGE ===*/
       const thinkingMessage: Message = {
         id: `thinking-${Date.now()}`,
         user_id: userId,
@@ -233,11 +233,10 @@ const Chat: React.FC = () => {
       
       setMessages(prev => [...prev, thinkingMessage]);
       
-      // Simulate streaming response
+      /*=== STREAMING RESPONSE ===*/
       const responseText = aiResponse.data.response || aiResponse.data;
       let displayedText = '';
       
-      // Remove the thinking message and add streaming response
       setMessages(prev => prev.filter(msg => msg.id !== thinkingMessage.id));
       
       for (let i = 0; i < responseText.length; i++) {
@@ -250,7 +249,7 @@ const Chat: React.FC = () => {
           sender: 'ai'
         };
         
-        // Update the streaming message
+        /*=== UPDATING STREAMING MESSAGE ===*/
         setMessages(prev => {
           const withoutStreaming = prev.filter(msg => !msg.id.startsWith('streaming-'));
           return [...withoutStreaming, streamingMessage].sort((a, b) => 
@@ -258,18 +257,17 @@ const Chat: React.FC = () => {
           );
         });
         
-        // Add a small delay for streaming effect
+        /*=== SMALL DELAY FOR STREAMING EFFECTS ===*/
         await new Promise(resolve => setTimeout(resolve, 20));
       }
       
-      // Final fetch to get the actual stored messages
       await fetchMessages();
       
     } catch (err: any) {
       console.error('Send Message Error:', err.response?.data || err.message);
       setError('Failed to send message');
       
-      // Remove any temporary messages on error
+      /*=== REMOVE TEMPO MESSAGE ===*/
       setMessages(prev => prev.filter(msg => 
         !msg.id.startsWith('temp-') && 
         !msg.id.startsWith('thinking-') && 
@@ -313,7 +311,7 @@ const Chat: React.FC = () => {
     }
   };
 
-  // Calculate dynamic width based on message content
+/*=== USER MESSAGE BOX WIDTH ===*/
   const getMessageWidth = (content: string) => {
     const length = content.length;
     if (length < 5) return 'max-w-[80px]';
@@ -359,7 +357,6 @@ const Chat: React.FC = () => {
         </motion.div>
       )}
 
-      {/* Messages Container - Now much taller */}
       <div 
         ref={messagesContainerRef}
         className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4"
@@ -393,7 +390,7 @@ const Chat: React.FC = () => {
             className={`flex ${msg.sender === 'ai' ? 'justify-start' : 'justify-end'}`}
           >
             <div className={`flex items-start space-x-3 max-w-[85%] ${msg.sender === 'ai' ? 'flex-row' : 'flex-row-reverse space-x-reverse'}`}>
-              {/* Avatar */}
+             
               <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                 msg.sender === 'ai' 
                   ? 'bg-gradient-to-r from-green-500 to-teal-500' 
@@ -406,7 +403,7 @@ const Chat: React.FC = () => {
                 )}
               </div>
 
-              {/* Message Bubble */}
+              
               <div className={`p-3 rounded-2xl ${getMessageWidth(msg.content)} ${
                 msg.sender === 'ai' 
                   ? 'bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-sm' 
@@ -431,7 +428,7 @@ const Chat: React.FC = () => {
           </motion.div>
         ))}
         
-        {/* AI Thinking Indicator */}
+     
         {isAiThinking && (
           <motion.div
             variants={thinkingVariants}
@@ -453,14 +450,13 @@ const Chat: React.FC = () => {
           </motion.div>
         )}
         
-        {/* Invisible element for auto-scrolling */}
+      
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area - Fixed at bottom */}
       <div className="p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <div className="flex space-x-3 items-end">
-          {/* Input Field */}
+          
           <div className="flex-1">
             <input
               type="text"
@@ -473,7 +469,7 @@ const Chat: React.FC = () => {
             />
           </div>
           
-          {/* Send Button - Compact with icon only */}
+     
           <motion.button
             whileHover={{ scale: isSending || !newMessage.trim() ? 1 : 1.05 }}
             whileTap={{ scale: isSending || !newMessage.trim() ? 1 : 0.95 }}
@@ -492,7 +488,6 @@ const Chat: React.FC = () => {
           </motion.button>
         </div>
         
-        {/* Helper Text */}
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
           Press Enter to send • Shift + Enter for new line
         </p>

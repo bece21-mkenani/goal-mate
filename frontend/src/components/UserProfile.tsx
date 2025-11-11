@@ -18,9 +18,9 @@ import {
 import React, { useContext, useEffect, useState } from 'react';
 import { ThemeContext } from '../App';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3036';
+const apiUrl = import.meta.env.VITE_API_URL!;
 
-// Define interfaces locally 
+
 interface UserStatistics {
   id: string;
   user_id: string;
@@ -57,8 +57,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
   const [userInfo, setUserInfo] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // --- NEW State for Education Level ---
   const [selectedLevel, setSelectedLevel] = useState<EducationLevel>('');
   const [isSavingLevel, setIsSavingLevel] = useState(false);
   const [saveLevelError, setSaveLevelError] = useState<string | null>(null);
@@ -81,27 +79,20 @@ const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
       setIsLoading(true);
       const token = localStorage.getItem('auth_token');
       if (!token) throw new Error('No authentication token found');
-
-      // Fetch user info (this now includes 'education_level')
       const userResponse = await axios.get(`${apiUrl}/auth/user`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUserInfo(userResponse.data.user);
-
-      // Fetch user statistics
       const statsResponse = await axios.get(
         `${apiUrl}/user/statistics/${userResponse.data.user.id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setUserStats(statsResponse.data.statistics);
-
-      // Fetch achievements
       const achievementsResponse = await axios.get(
         `${apiUrl}/user/achievements`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setAchievements(achievementsResponse.data.achievements || []);
-
     } catch (err: any) {
       console.error('Fetch User Data Error:', err.message);
       setError('Failed to load user data');
@@ -109,8 +100,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
       setIsLoading(false);
     }
   };
-
-  // --- NEW --- Function to save the user's education level
   const handleSaveEducationLevel = async () => {
     if (!selectedLevel) {
       setSaveLevelError('Please select a level.');
@@ -125,8 +114,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
         { level: selectedLevel },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
-      // Update UI instantly to show the locked level
       setUserInfo((prev: any) => ({
         ...prev,
         education_level: selectedLevel
@@ -306,7 +293,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
         </h3>
         
         {userInfo?.education_level ? (
-          // --- CASE 1: Level is already set (LOCKED) ---
           <div>
             <p className="text-lg font-medium text-gray-700 dark:text-gray-200 capitalize">
               {userInfo.education_level}
@@ -317,7 +303,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ onBack }) => {
             </p>
           </div>
         ) : (
-          // --- CASE 2: Level is NOT set (NULL) ---
           <div>
             <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
               Set your education level to access the private admin group rooms. You can only set this once.

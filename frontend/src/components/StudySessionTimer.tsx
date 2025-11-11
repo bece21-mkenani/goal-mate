@@ -1,16 +1,24 @@
-import axios from 'axios';
-import { motion } from 'framer-motion';
-import { Award, BookOpen, CheckCircle, Loader2, Pause, Play, RotateCcw, Timer } from 'lucide-react';
-import React, { useContext, useEffect, useState } from 'react';
-import { ThemeContext } from '../App'; // Import theme context
+import axios from "axios";
+import { motion } from "framer-motion";
+import {
+  Award,
+  BookOpen,
+  CheckCircle,
+  Loader2,
+  Pause,
+  Play,
+  RotateCcw,
+  Timer,
+} from "lucide-react";
+import React, { useContext, useEffect, useState } from "react";
+import { ThemeContext } from "../App";
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3036';
+const apiUrl = import.meta.env.VITE_API_URL!;
 
-// Define the Plan interface here, mirroring your service
 interface StudyPlan {
   id: string;
   user_id: string;
-  topics: string[]; // This is what we need
+  topics: string[];
   schedule: any[];
   created_at: string;
 }
@@ -20,52 +28,44 @@ const StudySessionTimer: React.FC = () => {
   const [time, setTime] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [isPaused, setIsPaused] = useState(true);
-  const [selectedSubject, setSelectedSubject] = useState('');
-  
-  // --- MODIFICATION: States for dynamic subjects ---
-  const [subjects, setSubjects] = useState<string[]>([]); 
-  const [isLoadingSubjects, setIsLoadingSubjects] = useState(true); 
-  
+  const [selectedSubject, setSelectedSubject] = useState("");
+  const [subjects, setSubjects] = useState<string[]>([]);
+  const [isLoadingSubjects, setIsLoadingSubjects] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // --- NEW: useEffect to fetch user's subjects ---
   useEffect(() => {
     const fetchUserSubjects = async () => {
       try {
-        const token = localStorage.getItem('auth_token');
-        if (!token) throw new Error('No auth token found');
+        const token = localStorage.getItem("auth_token");
+        if (!token) throw new Error("No auth token found");
 
-        // 1. Get User ID
         const userResponse = await axios.get(`${apiUrl}/auth/user`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const userId = userResponse.data.user.id;
 
-        // 2. Get User's Study Plans
         const plansResponse = await axios.get(
           `${apiUrl}/study-plan/user/${userId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        // 3. Extract and de-duplicate subjects
+
         const allPlans: StudyPlan[] = plansResponse.data.plans || [];
-        const allTopics = allPlans.flatMap(plan => plan.topics); 
-        const uniqueTopics = [...new Set(allTopics)]; 
+        const allTopics = allPlans.flatMap((plan) => plan.topics);
+        const uniqueTopics = [...new Set(allTopics)];
         setSubjects(uniqueTopics);
-        
       } catch (err: any) {
-        console.error('Failed to fetch user subjects:', err.message);
-        setError('Could not load your subjects from Study Plans.');
+        console.error("Failed to fetch user subjects:", err.message);
+        setError("Could not load your subjects from Study Plans.");
       } finally {
         setIsLoadingSubjects(false);
       }
     };
 
     fetchUserSubjects();
-  }, []); 
+  }, []);
 
-  // ... (Timer logic - no changes)
   useEffect(() => {
     let interval: any = null;
     if (isActive && !isPaused) {
@@ -80,7 +80,7 @@ const StudySessionTimer: React.FC = () => {
 
   const handleStart = () => {
     if (!selectedSubject) {
-      setError('Please select a subject before starting.');
+      setError("Please select a subject before starting.");
       return;
     }
     setError(null);
@@ -102,7 +102,7 @@ const StudySessionTimer: React.FC = () => {
     const durationInMinutes = Math.floor(time / 60);
 
     if (durationInMinutes < 1) {
-      setError('You must study for at least 1 minute to save the session.');
+      setError("You must study for at least 1 minute to save the session.");
       return;
     }
 
@@ -110,7 +110,7 @@ const StudySessionTimer: React.FC = () => {
     setIsSaving(true);
 
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem("auth_token");
       const userResponse = await axios.get(`${apiUrl}/auth/user`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -121,14 +121,13 @@ const StudySessionTimer: React.FC = () => {
         { userId, subject: selectedSubject, duration: durationInMinutes },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
       handleReset();
-
     } catch (err: any) {
-      console.error('Finish Session Error:', err.response?.data || err.message);
-      setError('Failed to save your session. Please try again.');
+      console.error("Finish Session Error:", err.response?.data || err.message);
+      setError("Failed to save your session. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -142,12 +141,11 @@ const StudySessionTimer: React.FC = () => {
     return `${getHours}:${getMinutes}:${getSeconds}`;
   };
 
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
       className="w-full max-w-lg mx-auto p-4 sm:p-6 bg-white dark:bg-gradient-to-br dark:from-gray-800 dark:to-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700"
     >
       {/* Header */}
@@ -165,10 +163,12 @@ const StudySessionTimer: React.FC = () => {
 
       {/* Error Message */}
       {error && (
-        <p className="text-red-500 dark:text-red-400 text-center mb-4 text-sm">{error}</p>
+        <p className="text-red-500 dark:text-red-400 text-center mb-4 text-sm">
+          {error}
+        </p>
       )}
 
-      {/* --- MODIFICATION: Dynamic Subject Selector --- */}
+      {/* ---Dynamic Subject Selector --- */}
       <div className="mb-8">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           <BookOpen className="inline w-4 h-4 mr-2" />
@@ -177,27 +177,35 @@ const StudySessionTimer: React.FC = () => {
         <select
           value={selectedSubject}
           onChange={(e) => setSelectedSubject(e.target.value)}
-          disabled={isActive || isLoadingSubjects} // Disable if timer active OR subjects loading
+          disabled={isActive || isLoadingSubjects}
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-70"
         >
           {isLoadingSubjects ? (
-            <option value="" disabled>Loading your subjects...</option>
+            <option value="" disabled>
+              Loading your subjects...
+            </option>
           ) : subjects.length > 0 ? (
             <>
-              <option value="" disabled>Choose a subject...</option>
-              {subjects.map(sub => <option key={sub} value={sub}>{sub}</option>)}
+              <option value="" disabled>
+                Choose a subject...
+              </option>
+              {subjects.map((sub) => (
+                <option key={sub} value={sub}>
+                  {sub}
+                </option>
+              ))}
             </>
           ) : (
-            <option value="" disabled>No subjects found. Add a Study Plan!</option>
+            <option value="" disabled>
+              No subjects found. Add a Study Plan!
+            </option>
           )}
         </select>
       </div>
 
-      {/* ... (Rest of the JSX: Timer Display, Controls, Finish Button, Success Message - no changes) ... */}
-      
       {/* Timer Display */}
       <div className="text-center mb-8">
-        <motion.p 
+        <motion.p
           className=" text:6xl sm:text-4xl font-mono font-bold text-gray-800 dark:text-white"
           key={time}
           initial={{ opacity: 0.8, scale: 0.98 }}
@@ -207,7 +215,7 @@ const StudySessionTimer: React.FC = () => {
           {formatTime(time)}
         </motion.p>
       </div>
-            {/* Controls */}
+      {/* Controls */}
       <div className="flex justify-center items-center space-x-2 sm:space-x-4">
         {!isActive ? (
           <motion.button
@@ -227,9 +235,9 @@ const StudySessionTimer: React.FC = () => {
               whileTap={{ scale: 0.95 }}
               onClick={handlePauseResume}
               className={`flex items-center space-x-1 sm:space-x-2 px-4 sm:px-6 py-2 sm:py-3 rounded-full font-semibold shadow-md min-w-[80px] sm:min-w-[100px] ${
-                isPaused 
-                ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white' 
-                : 'bg-yellow-500 text-white'
+                isPaused
+                  ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white"
+                  : "bg-yellow-500 text-white"
               }`}
             >
               {isPaused ? (
@@ -237,7 +245,9 @@ const StudySessionTimer: React.FC = () => {
               ) : (
                 <Pause className="w-4 h-4 sm:w-5 sm:h-5" />
               )}
-              <span className="text-sm sm:text-lg">{isPaused ? 'Resume' : 'Pause'}</span>
+              <span className="text-sm sm:text-lg">
+                {isPaused ? "Resume" : "Pause"}
+              </span>
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -261,26 +271,24 @@ const StudySessionTimer: React.FC = () => {
             disabled={isSaving || time < 60}
             className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg text-lg font-semibold shadow-lg disabled:opacity-50"
           >
-            {isSaving ? (
-              <Loader2 className="animate-spin" />
-            ) : (
-              <Award />
-            )}
-            <span className="text-sm sm:text-lg">{isSaving ? 'Saving...' : 'Finish & Save'}</span>
+            {isSaving ? <Loader2 className="animate-spin" /> : <Award />}
+            <span className="text-sm sm:text-lg">
+              {isSaving ? "Saving..." : "Finish & Save"}
+            </span>
           </motion.button>
         </div>
       )}
 
       {/* Success Message */}
       {showSuccess && (
-         <motion.div
-           initial={{ opacity: 0, y: 10 }}
-           animate={{ opacity: 1, y: 0 }}
-           className="mt-4 flex items-center justify-center space-x-2 text-green-600 dark:text-green-400"
-         >
-           <CheckCircle className="w-5 h-5" />
-           <span>Session saved successfully!</span>
-         </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 flex items-center justify-center space-x-2 text-green-600 dark:text-green-400"
+        >
+          <CheckCircle className="w-5 h-5" />
+          <span>Session saved successfully!</span>
+        </motion.div>
       )}
     </motion.div>
   );

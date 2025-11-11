@@ -1,10 +1,16 @@
-import axios from 'axios';
-import { motion, type Variants } from 'framer-motion';
-import { CheckCircle, ChevronRight, Layers, Loader2, Sparkles } from 'lucide-react';
-import React, { useCallback, useContext, useEffect, useState } from 'react';
-import { ThemeContext } from '../App';
+import axios from "axios";
+import { motion, type Variants } from "framer-motion";
+import {
+  CheckCircle,
+  ChevronRight,
+  Layers,
+  Loader2,
+  Sparkles,
+} from "lucide-react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
+import { ThemeContext } from "../App";
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3036';
+const apiUrl = import.meta.env.VITE_API_URL!;
 
 interface Flashcard {
   id: string;
@@ -21,7 +27,7 @@ interface FlashcardProps {
 
 const Flashcard: React.FC<FlashcardProps> = ({ onStartReview }) => {
   useContext(ThemeContext);
-  const [subject, setSubject] = useState('');
+  const [subject, setSubject] = useState("");
   const [count, setCount] = useState(5);
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -34,14 +40,14 @@ const Flashcard: React.FC<FlashcardProps> = ({ onStartReview }) => {
   const fetchReviewCount = useCallback(async () => {
     setIsFetchingCount(true);
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem("auth_token");
       const response = await axios.get(`${apiUrl}/flashcards/review`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setDueCardsCount(response.data.reviewDeck?.length || 0);
     } catch (err) {
-      console.error('Failed to fetch review deck:', err);
-      setError('Could not fetch review cards.');
+      console.error("Failed to fetch review deck:", err);
+      setError("Could not fetch review cards.");
       setDueCardsCount(0);
     } finally {
       setIsFetchingCount(false);
@@ -49,26 +55,28 @@ const Flashcard: React.FC<FlashcardProps> = ({ onStartReview }) => {
   }, []);
 
   useEffect(() => {
-    const savedHistory = JSON.parse(localStorage.getItem('flashcard_history') || '[]');
+    const savedHistory = JSON.parse(
+      localStorage.getItem("flashcard_history") || "[]"
+    );
     setFlashcards(savedHistory);
     fetchReviewCount();
   }, [fetchReviewCount]);
 
   useEffect(() => {
     if (flashcards.length > 0) {
-      localStorage.setItem('flashcard_history', JSON.stringify(flashcards));
+      localStorage.setItem("flashcard_history", JSON.stringify(flashcards));
     }
   }, [flashcards]);
 
   const handleGenerateFlashcards = async () => {
     if (!subject.trim() || count <= 0) {
-      setError('Please enter a subject and count > 0');
+      setError("Please enter a subject and count > 0");
       return;
     }
 
     setIsGenerating(true);
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem("auth_token");
       const userResponse = await axios.get(`${apiUrl}/auth/user`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -85,8 +93,11 @@ const Flashcard: React.FC<FlashcardProps> = ({ onStartReview }) => {
       setError(null);
       await fetchReviewCount();
     } catch (err: any) {
-      console.error('Generate Flashcards Error:', err.response?.data || err.message);
-      setError('Failed to generate flashcards');
+      console.error(
+        "Generate Flashcards Error:",
+        err.response?.data || err.message
+      );
+      setError("Failed to generate flashcards");
     } finally {
       setIsGenerating(false);
     }
@@ -98,7 +109,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ onStartReview }) => {
   };
 
   const handleClearHistory = () => {
-    localStorage.removeItem('flashcard_history');
+    localStorage.removeItem("flashcard_history");
     setFlashcards([]);
   };
 
@@ -122,7 +133,9 @@ const Flashcard: React.FC<FlashcardProps> = ({ onStartReview }) => {
     return (
       <>
         <Sparkles size={20} />
-        <span className="ml-2">Review {dueCardsCount} {dueCardsCount === 1 ? 'card' : 'cards'}</span>
+        <span className="ml-2">
+          Review {dueCardsCount} {dueCardsCount === 1 ? "card" : "cards"}
+        </span>
         <ChevronRight size={20} className="ml-auto" />
       </>
     );
@@ -132,7 +145,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ onStartReview }) => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
       className="w-full max-w-3xl mx-auto p-4 sm:p-6 bg-gray-100 dark:bg-gradient-to-br dark:from-gray-800 dark:to-gray-900 rounded-lg shadow-md"
     >
       {/* Header */}
@@ -149,13 +162,15 @@ const Flashcard: React.FC<FlashcardProps> = ({ onStartReview }) => {
       </div>
 
       {/* Spaced Repetition Review Block */}
-      <motion.div 
+      <motion.div
         className="mb-8"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
       >
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Smart Review</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+          Smart Review
+        </h3>
         <motion.button
           onClick={onStartReview}
           disabled={isFetchingCount || dueCardsCount === 0}
@@ -163,8 +178,12 @@ const Flashcard: React.FC<FlashcardProps> = ({ onStartReview }) => {
                      bg-gradient-to-r from-blue-600 to-purple-600 text-white
                      hover:from-blue-700 hover:to-purple-700
                      disabled:opacity-60 disabled:cursor-not-allowed"
-          whileHover={{ scale: (isFetchingCount || dueCardsCount === 0) ? 1 : 1.02 }}
-          whileTap={{ scale: (isFetchingCount || dueCardsCount === 0) ? 1 : 0.98 }}
+          whileHover={{
+            scale: isFetchingCount || dueCardsCount === 0 ? 1 : 1.02,
+          }}
+          whileTap={{
+            scale: isFetchingCount || dueCardsCount === 0 ? 1 : 0.98,
+          }}
         >
           {renderReviewButtonContent()}
         </motion.button>
@@ -175,12 +194,16 @@ const Flashcard: React.FC<FlashcardProps> = ({ onStartReview }) => {
 
       {/* Error message */}
       {error && (
-        <p className="text-red-500 dark:text-red-400 text-center mb-4 text-sm sm:text-base">{error}</p>
+        <p className="text-red-500 dark:text-red-400 text-center mb-4 text-sm sm:text-base">
+          {error}
+        </p>
       )}
 
       {/* Card Generation Block */}
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Generate New Cards</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+          Generate New Cards
+        </h3>
         <div className="space-y-4 p-4 sm:p-5 bg-white dark:bg-gray-800 rounded-lg shadow-inner">
           <div>
             <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -209,7 +232,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ onStartReview }) => {
               max="20"
             />
           </div>
-          
+
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <motion.button
               onClick={handleGenerateFlashcards}
@@ -218,7 +241,8 @@ const Flashcard: React.FC<FlashcardProps> = ({ onStartReview }) => {
             >
               {isGenerating ? (
                 <>
-                  <Loader2 size={20} className="animate-spin mr-2" /> Generating...
+                  <Loader2 size={20} className="animate-spin mr-2" />{" "}
+                  Generating...
                 </>
               ) : (
                 `Generate ${count} Flashcards`
@@ -229,7 +253,9 @@ const Flashcard: React.FC<FlashcardProps> = ({ onStartReview }) => {
               onClick={() => setShowHistory(!showHistory)}
               className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md text-sm sm:text-base hover:bg-gray-300 dark:hover:bg-gray-600 transition"
             >
-              {showHistory ? 'Hide Generation History' : 'Show Generation History'}
+              {showHistory
+                ? "Hide Generation History"
+                : "Show Generation History"}
             </button>
           </div>
         </div>
@@ -244,7 +270,9 @@ const Flashcard: React.FC<FlashcardProps> = ({ onStartReview }) => {
           className="mt-6 p-4 sm:p-5 bg-white dark:bg-gray-800 rounded-md shadow-inner"
         >
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Local Generation History</h3>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+              Local Generation History
+            </h3>
             <button
               onClick={handleClearHistory}
               className="text-sm px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors"
@@ -262,7 +290,9 @@ const Flashcard: React.FC<FlashcardProps> = ({ onStartReview }) => {
               {flashcards.map((card) => (
                 <motion.div
                   key={card.id}
-                  onClick={() => setFlippedCard(flippedCard === card.id ? null : card.id)}
+                  onClick={() =>
+                    setFlippedCard(flippedCard === card.id ? null : card.id)
+                  }
                   className="cursor-pointer border border-gray-300 dark:border-gray-600 rounded-md p-3 bg-gray-50 dark:bg-gray-700 transition-transform hover:scale-[1.02]"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -271,9 +301,13 @@ const Flashcard: React.FC<FlashcardProps> = ({ onStartReview }) => {
                     {card.subject}
                   </h4>
                   {flippedCard === card.id ? (
-                    <p className="text-sm text-gray-700 dark:text-gray-300">{card.back}</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      {card.back}
+                    </p>
                   ) : (
-                    <p className="text-sm text-gray-900 dark:text-white">{card.front}</p>
+                    <p className="text-sm text-gray-900 dark:text-white">
+                      {card.front}
+                    </p>
                   )}
                 </motion.div>
               ))}

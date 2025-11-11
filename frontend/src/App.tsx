@@ -13,7 +13,7 @@ import UserProfile from './components/UserProfile';
 import { SocketProvider } from './contexts/SocketContext';
 import StudyGroups from './components/StudyGroups'; 
 import GroupChat from './components/GroupChat';
-import AdminDashboard from './components/AdminDashboard'; // --- NEW ---
+import AdminDashboard from './components/AdminDashboard'; 
 import ToastProvider from './components/ToastProvider';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3036';
@@ -28,7 +28,7 @@ export const ThemeContext = createContext<ThemeContextType>({
   toggleTheme: () => {},
 });
 
-// --- MODIFIED --- Added 'admin' page
+/*==== APP COMPONENT ====*/
 type Page = 'chat' | 'study-plan' | 'flashcard' | 'profile' | 'timer'| 'analytics'| 'groups' | 'admin';
 
 type SelectedGroup = {
@@ -44,7 +44,7 @@ const App: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isReviewing, setIsReviewing] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<SelectedGroup>(null);
-  const [isAdmin, setIsAdmin] = useState(false); // --- NEW ---
+  const [isAdmin, setIsAdmin] = useState(false); 
 
   const toggleTheme = () => {
     setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark');
@@ -56,7 +56,7 @@ const App: React.FC = () => {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  // --- MODIFIED --- Fetches user and admin status
+  /*==== TOKEN VALIDDATION ====*/
   useEffect(() => {
     const validateToken = async () => {
       const token = localStorage.getItem('auth_token');
@@ -83,7 +83,7 @@ const App: React.FC = () => {
     validateToken();
   }, []);
 
-  // --- MODIFIED --- Fetches user and admin status
+  /*==== AUTH HANDLERS ===*/
   const handleAuthSuccess = async () => {
     const token = localStorage.getItem('auth_token');
     if (!token) {
@@ -105,7 +105,7 @@ const App: React.FC = () => {
     }
   };
 
-  // --- MODIFIED --- Resets admin status on logout
+  /* === LOGOUT HANDELER ====*/
   const handleLogout = async () => {
     try {
       await axios.post(`${apiUrl}/auth/signout`, {}, {
@@ -116,7 +116,7 @@ const App: React.FC = () => {
     }
     localStorage.removeItem('auth_token');
     setIsAuthenticated(false);
-    setIsAdmin(false); // --- NEW ---
+    setIsAdmin(false); 
     setCurrentPage('chat');
     setIsMobileMenuOpen(false);
     setIsReviewing(false);
@@ -150,7 +150,6 @@ const App: React.FC = () => {
         {isAuthenticated ? (
         <SocketProvider>
           <>
-            {/* --- MODIFIED --- Pass isAdmin prop */}
             <Navbar
               currentPage={currentPage}
               onPageChange={handlePageChange}
@@ -159,24 +158,24 @@ const App: React.FC = () => {
               theme={theme}
               isMobileMenuOpen={isMobileMenuOpen}
               onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              isAdmin={isAdmin} // --- NEW ---
+              isAdmin={isAdmin} 
             />
             
             <main className="pt-16">
               <div className="p-4 sm:p-6 md:p-8">
                 <AnimatePresence mode="wait">
                 {currentPage === 'chat' && (
-                  <motion.div key="chat" /* ... */ >
+                  <motion.div key="chat"  >
                     <Chat />
                   </motion.div>
                 )}
                 {currentPage === 'analytics' && (
-                  <motion.div key="analytics" /* ... */ >
+                  <motion.div key="analytics" >
                     <AdvancedAnalytics />
                   </motion.div>
                 )}
                 {currentPage === 'study-plan' && (
-                  <motion.div key="study-plan" /* ... */ >
+                  <motion.div key="study-plan"  >
                     <StudyPlan />
                   </motion.div>
                 )}
@@ -184,11 +183,11 @@ const App: React.FC = () => {
                   <div key="flashcard-page">
                     <AnimatePresence mode="wait">
                       {!isReviewing ? (
-                        <motion.div key="flashcard-main" /* ... */ >
+                        <motion.div key="flashcard-main" >
                           <Flashcard onStartReview={() => setIsReviewing(true)} />
                         </motion.div>
                       ) : (
-                        <motion.div key="flashcard-review" /* ... */ >
+                        <motion.div key="flashcard-review"  >
                           <ReviewSession onSessionComplete={() => setIsReviewing(false)} />
                         </motion.div>
                       )}
@@ -196,7 +195,7 @@ const App: React.FC = () => {
                   </div>
                 )}
                 {currentPage === 'timer' && (
-                  <motion.div key="timer" /* ... */ >
+                  <motion.div key="timer" >
                     <StudySessionTimer />
                   </motion.div>
                 )}
@@ -204,14 +203,14 @@ const App: React.FC = () => {
                   <div key="groups-page">
                     <AnimatePresence mode="wait">
                       {!selectedGroup ? (
-                        <motion.div key="group-lobby" /* ... */ >
+                        <motion.div key="group-lobby" >
                           <StudyGroups 
                             onSelectGroup={(groupId) => setSelectedGroup({ id: groupId, roomName: 'general' })}
                             onSelectAdminRoom={(groupId, roomName) => setSelectedGroup({ id: groupId, roomName: roomName })}
                           />
                         </motion.div>
                       ) : (
-                        <motion.div key="group-chat" /* ... */ >
+                        <motion.div key="group-chat" >
                           <GroupChat
                             groupId={selectedGroup.id}
                             roomName={selectedGroup.roomName}
@@ -223,11 +222,10 @@ const App: React.FC = () => {
                   </div>
                 )} 
                 {currentPage === 'profile' && (
-                  <motion.div key="profile" /* ... */ >
+                  <motion.div key="profile" >
                     <UserProfile onBack={handleBackToDashboard} />
                   </motion.div>
                 )}
-                {/* --- NEW ADMIN PAGE ROUTE --- */}
                 {currentPage === 'admin' && (
                   <motion.div
                     key="admin"

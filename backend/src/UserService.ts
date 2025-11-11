@@ -1,10 +1,9 @@
-
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import dotenv from "dotenv";
 dotenv.config();
 
 const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_KEY!;
+const supabaseKey = process.env.SUPABASE_SERVICE_KEY!;
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -36,14 +35,13 @@ export interface StudySession {
   id: string;
   user_id: string;
   subject: string;
-  duration: number; 
+  duration: number;
   points_earned: number;
   created_at: string;
 }
 
 /*=== USER SERVICES ===*/
 export class UserService {
-
   /*=== FETCHING USER STATISTICS ===*/
   static async getUserStatistics(
     userId: string,
@@ -54,39 +52,42 @@ export class UserService {
     });
 
     let { data: statistics, error } = await supabaseAuth
-      .from('user_statistics')
-      .select('*')
-      .eq('user_id', userId)
+      .from("user_statistics")
+      .select("*")
+      .eq("user_id", userId)
       .single();
 
     if (error || !statistics) {
-      console.log('No stats found, creating new entry.');
+      console.log("No stats found, creating new entry.");
       const { data: newStats, error: createError } = await supabaseAuth
-        .from('user_statistics')
-        .insert([{ user_id: userId, total_sessions: 0 }]) 
+        .from("user_statistics")
+        .insert([{ user_id: userId, total_sessions: 0 }])
         .select()
         .single();
 
       if (createError)
-        throw new Error(`Failed to create user statistics: ${createError.message}`);
+        throw new Error(
+          `Failed to create user statistics: ${createError.message}`
+        );
       statistics = newStats;
     }
 
     return statistics;
   }
-/*=== FETCHING ACHIEVEMENTS LIST ===*/
+  /*=== FETCHING ACHIEVEMENTS LIST ===*/
   static async getAchievements(accessToken: string): Promise<Achievement[]> {
     const supabaseAuth = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: `Bearer ${accessToken}` } },
     });
     const { data, error } = await supabaseAuth
-      .from('achievements')
-      .select('*')
-      .order('points', { ascending: true });
-    if (error) throw new Error(`Failed to fetch achievements: ${error.message}`);
+      .from("achievements")
+      .select("*")
+      .order("points", { ascending: true });
+    if (error)
+      throw new Error(`Failed to fetch achievements: ${error.message}`);
     return data || [];
   }
- /*=== RECORDING STUDY SESSION & UPDATING STATISTICS ===*/
+  /*=== RECORDING STUDY SESSION & UPDATING STATISTICS ===*/
   static async recordStudySession(
     userId: string,
     subject: string,
@@ -102,14 +103,24 @@ export class UserService {
 
     /*=== 1. RECORDING STUDY SESSION ===*/
     const { error: sessionError } = await supabaseAuth
-      .from('study_sessions')
-      .insert([{ user_id: userId, subject, duration, points_earned: pointsEarned }]);
+      .from("study_sessions")
+      .insert([
+        { user_id: userId, subject, duration, points_earned: pointsEarned },
+      ]);
 
     if (sessionError)
-      throw new Error(`Failed to record study session: ${sessionError.message}`);
+      throw new Error(
+        `Failed to record study session: ${sessionError.message}`
+      );
 
     /*=== 2. UPDATING USER STATISTICS ===*/
-    await this.updateUserStatistics(userId, subject, pointsEarned, duration, accessToken);
+    await this.updateUserStatistics(
+      userId,
+      subject,
+      pointsEarned,
+      duration,
+      accessToken
+    );
   }
 
   /* === UPDATING USER STATISTICS (PRIVATE METHOSD)====*/
@@ -125,7 +136,7 @@ export class UserService {
     });
 
     const stats = await this.getUserStatistics(userId, accessToken);
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split("T")[0];
 
     /*=== CALCUALATING NEW STATISTICS VALUES ===*/
     let newStreak = stats.day_streak;
@@ -137,19 +148,19 @@ export class UserService {
       );
 
       if (dayDiff === 1) {
-        newStreak = stats.day_streak + 1; 
+        newStreak = stats.day_streak + 1;
       } else if (dayDiff > 1) {
-        newStreak = 1; 
+        newStreak = 1;
       }
     } else {
-      newStreak = 1; 
+      newStreak = 1;
     }
 
-   /*=== UPDATING STATISTICS IN DB ===*/
+    /*=== UPDATING STATISTICS IN DB ===*/
     const updatedSubjects = stats.subjects_studied.includes(subject)
       ? stats.subjects_studied
       : [...stats.subjects_studied, subject];
-   /*=== PREPARING PAYLOAD ===*/   
+    /*=== PREPARING PAYLOAD ===*/
     const newStats = {
       total_points: stats.total_points + pointsEarned,
       day_streak: newStreak,
@@ -161,14 +172,18 @@ export class UserService {
     };
 
     const { error } = await supabaseAuth
-      .from('user_statistics')
+      .from("user_statistics")
       .update(newStats)
-      .eq('user_id', userId);
+      .eq("user_id", userId);
 
-    if (error) throw new Error(`Failed to update user statistics: ${error.message}`);
+    if (error)
+      throw new Error(`Failed to update user statistics: ${error.message}`);
 
     /* === CHECKING & AWARDING ACHIEVEMENTS ===*/
-    await this.checkAndAwardAchievements(supabaseAuth, userId, { ...stats, ...newStats });
+    await this.checkAndAwardAchievements(supabaseAuth, userId, {
+      ...stats,
+      ...newStats,
+    });
   }
   /* === CHECKING & AWARDING ACHIEVEMENTS (PRIVATE METHOD)===*/
   private static async checkAndAwardAchievements(
@@ -179,8 +194,8 @@ export class UserService {
     try {
       /*=== GETTING ALL ACHIEVEMENTS ===*/
       const { data: allAchievements, error: achError } = await supabase
-        .from('achievements')
-        .select('*');
+        .from("achievements")
+        .select("*");
       if (achError) throw achError;
       const unearnedAchievements = allAchievements.filter(
         (ach: Achievement) => !updatedStats.achievements_earned.includes(ach.id)
@@ -192,21 +207,25 @@ export class UserService {
       for (const ach of unearnedAchievements) {
         let conditionMet = false;
         switch (ach.condition_type) {
-          case 'points':
-            if (updatedStats.total_points >= ach.condition_value) conditionMet = true;
+          case "points":
+            if (updatedStats.total_points >= ach.condition_value)
+              conditionMet = true;
             break;
-          case 'streak':
-            if (updatedStats.day_streak >= ach.condition_value) conditionMet = true;
+          case "streak":
+            if (updatedStats.day_streak >= ach.condition_value)
+              conditionMet = true;
             break;
-          case 'sessions':
-            if (updatedStats.total_sessions >= ach.condition_value) conditionMet = true;
+          case "sessions":
+            if (updatedStats.total_sessions >= ach.condition_value)
+              conditionMet = true;
             break;
-          case 'subjects':
+          case "subjects":
             if (updatedStats.subjects_studied.length >= ach.condition_value)
               conditionMet = true;
             break;
-          case 'time':
-            if (updatedStats.total_study_time >= ach.condition_value) conditionMet = true;
+          case "time":
+            if (updatedStats.total_study_time >= ach.condition_value)
+              conditionMet = true;
             break;
         }
 
@@ -223,12 +242,14 @@ export class UserService {
         ];
 
         const { error: updateError } = await supabase
-          .from('user_statistics')
+          .from("user_statistics")
           .update({ achievements_earned: updatedAchievementList })
-          .eq('user_id', userId);
+          .eq("user_id", userId);
 
         if (updateError) throw updateError;
-        console.log(`Awarded ${newAchievementsToAward.length} new achievements to user ${userId}`);
+        console.log(
+          `Awarded ${newAchievementsToAward.length} new achievements to user ${userId}`
+        );
       }
     } catch (err: any) {
       console.error(`Error checking/awarding achievements: ${err.message}`);

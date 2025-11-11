@@ -43,7 +43,7 @@ export default defineConfig({
         ]
       },
       
-      // Service worker configuration
+      /*=== SERVICE WOKER CONFIGURATION ===*/
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'], 
         runtimeCaching: [

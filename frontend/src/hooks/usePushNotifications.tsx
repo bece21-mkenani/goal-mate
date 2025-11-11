@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3036';
+const apiUrl = import.meta.env.VITE_API_URL;
 
-// Helper function (unchanged)
+/*=== HELPER CONVERT VAPID KEY ===*/
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -23,7 +23,6 @@ export const usePushNotifications = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check for browser support
     if ('serviceWorker' in navigator && 'PushManager' in window) {
       console.log("Push Notifications: Supported!");
       setIsSupported(true);
@@ -41,31 +40,31 @@ export const usePushNotifications = () => {
   }, []);
 
   const subscribeUser = async () => {
-    console.log("--- Starting Subscription Process ---"); // <-- NEW
+    console.log("--- Starting Subscription Process ---"); 
     setIsLoading(true);
     setError(null);
 
-    // 1. Get VAPID key
+    /*=== GETTING VAPID KEY ===*/
     let vapidPublicKey = '';
     try {
-      console.log("Subscribing: Step 1 - Getting VAPID key..."); // <-- NEW
+      console.log("Subscribing: Step 1 - Getting VAPID key..."); 
       const response = await axios.get(`${apiUrl}/notifications/vapid-key`);
       vapidPublicKey = response.data.publicKey;
-      console.log("Subscribing: Step 2 - Got VAPID key."); // <-- NEW
+      console.log("Subscribing: Step 2 - Got VAPID key.");
     } catch (err: any) {
-      console.error("Subscribing: FAILED at Step 1", err); // <-- NEW
+      console.error("Subscribing: FAILED at Step 1", err); 
       setError('Failed to contact server for subscription.');
       setIsLoading(false);
       return;
     }
 
-    // 2. Ask user for permission
+    /*=== REQUEST PERMISSION & SUBSCRIBE ===*/
     if (permission === 'default') {
-      console.log("Subscribing: Step 3 - Requesting permission..."); // <-- NEW
+      console.log("Subscribing: Step 3 - Requesting permission..."); 
       const newPermission = await Notification.requestPermission();
       setPermission(newPermission);
       if (newPermission !== 'granted') {
-        console.log("Subscribing: Permission was not granted."); // <-- NEW
+        console.log("Subscribing: Permission was not granted."); 
         setError('Permission was not granted.');
         setIsLoading(false);
         return;
@@ -73,24 +72,23 @@ export const usePushNotifications = () => {
     }
 
     if (permission === 'denied') {
-      console.log("Subscribing: Permission is denied."); // <-- NEW
+      console.log("Subscribing: Permission is denied."); 
       setError('Permission is denied. Please change it in your browser settings.');
       setIsLoading(false);
       return;
     }
 
-    // 3. Create the subscription
+    /*=== SUBSCRIBE TO PUSH ===*/
     try {
-      console.log("Subscribing: Step 4 - Permission OK. Getting service worker..."); // <-- NEW
       const registration = await navigator.serviceWorker.ready;
       
-      console.log("Subscribing: Step 5 - Got service worker. Creating subscription..."); // <-- NEW
+      console.log("Subscribing: Step 5 - Got service worker. Creating subscription...");
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
       });
 
-      console.log("Subscribing: Step 6 - Got subscription. Saving to backend..."); // <-- NEW
+      console.log("Subscribing: Step 6 - Got subscription. Saving to backend..."); 
       // 4. Send subscription to our backend
       const token = localStorage.getItem('auth_token');
       await axios.post(
@@ -99,13 +97,13 @@ export const usePushNotifications = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      console.log("Subscribing: Step 7 - Saved to backend. Finished."); // <-- NEW
+      console.log("Subscribing: Step 7 - Saved to backend. Finished."); 
       setIsSubscribed(true);
     } catch (err: any) {
-      console.error("Subscribing: FAILED at Step 4-7", err); // <-- NEW
+      console.error("Subscribing: FAILED at Step 4-7", err); 
       setError(err.message || 'Failed to subscribe.');
     } finally {
-      console.log("--- Ending Subscription Process ---"); // <-- NEW
+      console.log("--- Ending Subscription Process ---"); 
       setIsLoading(false);
     }
   };

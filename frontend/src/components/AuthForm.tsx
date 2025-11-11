@@ -4,7 +4,7 @@ import { Loader2, Moon, Sun } from 'lucide-react';
 import React, { useContext, useState } from 'react';
 import { ThemeContext } from '../App';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3036';
+const apiUrl = import.meta.env.VITE_API_URL!;
 
 interface AuthFormProps {
   onAuthSuccess: () => void;
