@@ -7,7 +7,7 @@
 *
   
 
-![Goal Mate Live Demo](https://goal-mate-rose.vercel.app/)
+[Goal Mate Live Demo](https://goal-mate-rose.vercel.app/)
 
 
 ## Core Features
